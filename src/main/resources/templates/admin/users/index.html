@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <!-- 管理者専用フラグメントの読み込み -->
+    <div th:replace="~{admin/fragment :: meta}"></div>
+    <div th:replace="~{admin/fragment :: styles}"></div>
+    <title>会員一覧 | SAMURAI Travel</title>
+</head>
+<body>
+    <div class="samuraitravel-wrapper">
+        <!-- ヘッダー（管理者用） -->
+        <div th:replace="~{admin/fragment :: header}"></div>
+
+        <main>
+            <div class="container pt-4 pb-5 samuraitravel-container">
+                <div class="row">
+                    <div class="col-xxl-9 col-xl-10 col-lg-11 mx-auto">
+                        
+                        <h1 class="mb-4 text-center text-lg-start fs-2">会員一覧</h1>
+
+                        <!-- 検索フォーム -->
+                        <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+                            <form method="get" th:action="@{/admin/users}" class="row g-3 mb-3 mb-lg-0">
+                                <div class="col-auto">
+                                    <input type="text" class="form-control form-control-sm" name="keyword" th:value="${keyword}" placeholder="氏名・フリガナで検索">
+                                </div>
+                                <div class="col-auto">
+                                    <button type="submit" class="btn btn-primary text-white shadow-sm btn-sm samuraitravel-btn">検索</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div th:if="${userPage.totalPages > 0}">
+                            <!-- 会員一覧テーブル -->
+                            <div class="table-responsive">
+                                <table class="table table-striped align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">ID</th>
+                                            <th scope="col">氏名</th>
+                                            <th scope="col">フリガナ</th>
+                                            <th scope="col">メールアドレス</th>
+                                            <th scope="col" class="text-center">詳細</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="user : ${userPage}">
+                                            <td th:text="${user.id}"></td>
+                                            <td th:text="${user.name}"></td>
+                                            <td th:text="${user.furigana}"></td>
+                                            <td th:text="${user.email}"></td>
+                                            <td class="text-center">
+                                                <a th:href="@{/admin/users/__${user.id}__}" class="btn btn-outline-secondary btn-sm">詳細</a>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- ページネーション（番号選択式に統一） -->
+                            <div th:if="${userPage.totalPages > 1}" class="d-flex justify-content-center">
+                                <nav aria-label="会員一覧ページ">
+                                    <ul class="pagination">
+                                        <li class="page-item" th:classappend="${userPage.first} ? 'disabled'">
+                                            <a class="page-link" th:href="@{/admin/users(page = ${userPage.number - 1}, keyword = ${keyword})}" aria-label="前へ">前へ</a>
+                                        </li>
+                                        <li class="page-item" th:classappend="${i == userPage.number} ? 'active'" th:each="i : ${#numbers.sequence(0, userPage.totalPages - 1)}">
+                                            <a class="page-link" th:href="@{/admin/users(page = ${i}, keyword = ${keyword})}" th:text="${i + 1}"></a>
+                                        </li>
+                                        <li class="page-item" th:classappend="${userPage.last} ? 'disabled'">
+                                            <a class="page-link" th:href="@{/admin/users(page = ${userPage.number + 1}, keyword = ${keyword})}" aria-label="次へ">次へ</a>
+                                        </li>
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- フッター（管理者用） -->
+        <div th:replace="~{admin/fragment :: footer}"></div>
+    </div>
+
+    <!-- Bootstrap JS（管理者用） -->
+    <div th:replace="~{admin/fragment :: scripts}"></div>
+</body>
+</html>

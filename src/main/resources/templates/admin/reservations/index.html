@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+    <head>
+        <!-- 管理者専用フラグメントの読み込み -->
+        <div th:replace="~{admin/fragment :: meta}"></div>   
+        <div th:replace="~{admin/fragment :: styles}"></div>
+        <title>予約一覧管理</title>
+    </head>
+    <body>
+        <div class="samuraitravel-wrapper">
+            <!-- 管理者用共通ヘッダー -->
+            <div th:replace="~{admin/fragment :: header}"></div>
+
+            <main>
+                <div class="container pt-4 pb-5 samuraitravel-container">
+                    <div class="row justify-content-center">
+                        <div class="col-xxl-9 col-xl-10 col-lg-11">
+
+                            <h1 class="mb-4 text-center fs-2">予約一覧管理</h1>
+
+                            <!-- 予約データテーブル -->
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover align-middle">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>民宿名</th>
+                                            <th>宿泊者名</th>
+                                            <th>チェックイン</th>
+                                            <th>チェックアウト</th>
+                                            <th>宿泊人数</th>
+                                            <th>料金</th>
+                                            <th>Stripe セッションID</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="reservation : ${reservationPage.content}">
+                                            <td th:text="${reservation.id}">1</td>
+                                            <td th:text="${reservation.house.name}">民宿名</td>
+                                            <td th:text="${reservation.user.name}">ユーザー名</td>
+                                            <td th:text="${reservation.checkinDate}">2026-09-20</td>
+                                            <td th:text="${reservation.checkoutDate}">2026-09-22</td>
+                                            <td th:text="${reservation.numberOfPeople + '名'}">2名</td>
+                                            <td th:text="${#numbers.formatInteger(reservation.amount, 1, 'COMMA') + '円'}">20,000円</td>
+                                            <td class="text-truncate" style="max-width: 150px;" th:text="${reservation.stripeSessionId}">cs_test_...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- ページネーション（データ数が複数ページに渡る場合） -->
+                            <div th:if="${reservationPage.totalPages > 1}" class="d-flex justify-content-center mt-4">
+                                <nav aria-label="予約一覧ページ">
+                                    <ul class="pagination">
+                                        <li class="page-item" th:classappend="${reservationPage.first} ? 'disabled'">
+                                            <a class="page-link" th:href="@{/admin/reservations(page = ${reservationPage.number - 1})}" aria-label="前へ">前へ</a>
+                                        </li>
+                                        <li class="page-item" th:classappend="${i == reservationPage.number} ? 'active'" th:each="i : ${#numbers.sequence(0, reservationPage.totalPages - 1)}">
+                                            <a class="page-link" th:href="@{/admin/reservations(page = ${i})}" th:text="${i + 1}"></a>
+                                        </li>
+                                        <li class="page-item" th:classappend="${reservationPage.last} ? 'disabled'">
+                                            <a class="page-link" th:href="@{/admin/reservations(page = ${reservationPage.number + 1})}" aria-label="次へ">次へ</a>
+                                        </li>
+                                    </ul>
+                                </nav>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+            </main>
+            
+            <!-- 管理者用共通フッター -->
+            <div th:replace="~{admin/fragment :: footer}"></div>
+        </div>
+
+        <!-- 管理者用共通スクリプト -->
+        <div th:replace="~{admin/fragment :: scripts}"></div>
+    </body>
+</html>

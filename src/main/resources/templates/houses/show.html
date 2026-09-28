@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<!-- 
+  【名前空間の設定】
+  xmlns:th : Thymeleafの動的タグ（th:text, th:if など）を有効化
+  xmlns:sec : Spring Security Dialect（sec:authorize など）による権限制御を有効化
+-->
+<html xmlns:th="https://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <!-- 【共通パーツ読み込み】fragment.html から meta と styles の部品を差し替え挿入 -->
+    <div th:replace="~{fragment :: meta}"></div>
+    <div th:replace="~{fragment :: styles}"></div>
+    <title>民宿詳細 | SAMURAI Travel</title>
+</head>
+<body>
+    <div class="samuraitravel-wrapper">
+        <!-- 【共通パーツ読み込み】ヘッダー部分を挿入 -->
+        <div th:replace="~{fragment :: header}"></div>
+
+        <main>
+            <div class="container pt-4 pb-5 samuraitravel-container">
+                <div class="row justify-content-center">
+                    <div class="col-xxl-9 col-xl-10 col-lg-11">
+                        
+                        <!-- 【動的テキスト出力】Controllerから渡された house オブジェクトの name プロパティを表示 -->
+                        <h1 class="mb-4 text-center text-lg-start" th:text="${house.name}"></h1>
+
+                        <!-- ① メイン写真表示エリア -->
+                        <div class="mb-4">
+                            <!-- 【条件分岐: TRUE】imageName が存在する場合、storageフォルダ内の画像を表示（__${...}__ はプリプロセッサによる変数展開） -->
+                            <img th:if="${house.imageName}" th:src="@{/storage/__${house.imageName}__}" class="w-100 rounded shadow-sm" alt="民宿画像">
+                            <!-- 【条件分岐: FALSE】imageName が null または空の場合、デフォルトの NO IMAGE 画像を表示 -->
+                            <img th:unless="${house.imageName}" th:src="@{/images/noImage.png}" class="w-100 rounded shadow-sm" alt="NO IMAGE">
+                        </div>
+
+                        <!-- ② 詳細情報と予約エリア（2カラムレイアウト） -->
+                        <div class="row">
+                            
+                            <!-- 左側カラム：詳細情報テーブル ＋ 戻るボタン -->
+                            <div class="col-lg-8">
+                                <div class="container mb-4 px-0">
+                                    <div class="row pb-2 mb-2 border-bottom">
+                                        <div class="col-4 fw-bold">民宿名</div>
+                                        <div class="col-8" th:text="${house.name}"></div>
+                                    </div>
+
+                                    <div class="row pb-2 mb-2 border-bottom">
+                                        <div class="col-4 fw-bold">民宿の説明</div>
+                                        <div class="col-8">
+                                            <p class="mb-0" th:text="${house.description}"></p>
+                                        </div>
+                                    </div>
+
+                                    <div class="row pb-2 mb-2 border-bottom">
+                                        <div class="col-4 fw-bold">宿泊料金</div>
+                                        <div class="col-8">
+                                            <!-- 【数値フォーマット】#numbers.formatInteger(price, 桁数, 'COMMA') で3桁区切り（例: 5,000円）に整形 -->
+                                            <span th:text="${#numbers.formatInteger(house.price, 1, 'COMMA')} + '円'"></span><span class="text-muted"> / 泊</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="row pb-2 mb-2 border-bottom">
+                                        <div class="col-4 fw-bold">定員</div>
+                                        <div class="col-8" th:text="${house.capacity} + '人'"></div>
+                                    </div>
+
+                                    <div class="row pb-2 mb-2 border-bottom">
+                                        <div class="col-4 fw-bold">郵便番号</div>
+                                        <div class="col-8" th:text="${house.postalCode}"></div>
+                                    </div>
+
+                                    <div class="row pb-2 mb-2 border-bottom">
+                                        <div class="col-4 fw-bold">住所</div>
+                                        <div class="col-8" th:text="${house.address}"></div>
+                                    </div>
+
+                                    <div class="row pb-2 mb-2 border-bottom">
+                                        <div class="col-4 fw-bold">電話番号</div>
+                                        <div class="col-8" th:text="${house.phoneNumber}"></div>
+                                    </div>
+                                </div>
+
+                                <!-- 戻るボタン -->
+                                <div class="mb-4">
+                                    <!-- 【動的リンク】@{/houses} でコンテキストパスに対応した一覧画面URLを生成 -->
+                                    <a class="btn btn-secondary text-white shadow-sm samuraitravel-btn" th:href="@{/houses}">民宿一覧に戻る</a>
+                                </div>
+                            </div>
+
+                            <!-- 右側カラム：予約フォーム または ログイン案内 -->
+                            <div class="col-lg-4">
+                                
+                                <!-- 【セキュリティ制御】ログイン済みのユーザー（isAuthenticated）にのみ予約フォームを表示 -->
+                                <div class="card mb-4" sec:authorize="isAuthenticated()">
+                                    <div class="card-body py-3 px-3">
+                                        <h2 class="card-title text-center fs-5 mb-3">予約する</h2>
+                                        
+                                        <!-- 
+                                          【フォーム属性設定】
+                                          method="get" : 入力値をクエリパラメータとして確認画面に渡す
+                                          th:action : パス変数 {id} に house.id を動的埋め込み
+                                          th:object : Controllerから渡されたフォームオブジェクト (reservationInputForm) とバインド
+                                        -->
+                                        <form method="get" th:action="@{/houses/{id}/reservations/confirm(id=${house.id})}" th:object="${reservationInputForm}">
+                                            
+                                            <!-- チェックイン日 -->
+                                            <div class="form-group mb-2">
+                                                <label class="col-form-label text-md-left fw-bold small">チェックイン日</label>
+                                                <!-- 【入力バインド】th:field="*{...}" により name="checkinDate", id="checkinDate", value を自動出力 -->
+                                                <input type="date" class="form-control form-control-sm" th:field="*{checkinDate}">
+                                                <!-- 【エラー表示】Validationエラーが存在する場合、メッセージを出力 -->
+                                                <div class="text-danger small" th:if="${#fields.hasErrors('checkinDate')}" th:errors="*{checkinDate}"></div>
+                                            </div>
+
+                                            <!-- チェックアウト日 -->
+                                            <div class="form-group mb-2">
+                                                <label class="col-form-label text-md-left fw-bold small">チェックアウト日</label>
+                                                <input type="date" class="form-control form-control-sm" th:field="*{checkoutDate}">
+                                                <div class="text-danger small" th:if="${#fields.hasErrors('checkoutDate')}" th:errors="*{checkoutDate}"></div>
+                                            </div>
+
+                                            <!-- 宿泊人数 -->
+                                            <div class="form-group mb-3">
+                                                <label class="col-form-label text-md-left fw-bold small">宿泊人数</label>
+                                                <!-- ※ th:field 使用時はフォームオブジェクトのプロパティ値が優先されるため value 属性は省略可能です -->
+                                                <input type="number" class="form-control form-control-sm" th:field="*{numberOfPeople}" min="1">
+                                                <div class="text-danger small" th:if="${#fields.hasErrors('numberOfPeople')}" th:errors="*{numberOfPeople}"></div>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <button type="submit" class="btn text-white shadow-sm w-100 btn-sm samuraitravel-btn">確認する</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                <!-- 【セキュリティ制御】未ログインユーザー（isAnonymous）にのみログイン誘導メッセージを表示 -->
+                                <div class="card mb-4" sec:authorize="isAnonymous()">
+                                    <div class="card-body text-center py-3 px-3">
+                                        <p class="mb-2 small">予約を行うには<a th:href="@{/login}">ログイン</a>が必要です。</p>
+                                        <a class="btn text-white shadow-sm w-100 btn-sm samuraitravel-btn" th:href="@{/login}">ログイン</a>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                        </div><!-- /.row -->
+
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 【共通パーツ読み込み】フッター部分を挿入 -->
+        <div th:replace="~{fragment :: footer}"></div>
+    </div>
+
+    <!-- 【共通パーツ読み込み】JavaScript読み込み部分を挿入 -->
+    <div th:replace="~{fragment :: scripts}"></div>
+</body>
+</html>

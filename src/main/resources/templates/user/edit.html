@@ -1,0 +1,72 @@
+<body>
+    <!-- 【共通パーツ読み込み】ヘッダー部分を挿入 -->
+    <div th:replace="~{fragment :: header}"></div>
+
+    <h1>会員情報編集</h1>
+
+    <!-- 
+      【会員情報更新フォーム】
+      th:action : フォームの送信先URL（/user/update へPOST送信）
+      method="post" : データの更新処理を行うためPOSTメソッドを指定
+      th:object : Controllerから渡されたフォームオブジェクト (userEditForm) をバインド
+    -->
+    <form th:action="@{/user/update}" method="post" th:object="${userEditForm}">
+        <!-- 
+          【隠しフィールド (hidden)】
+          更新対象のユーザーIDを保持。画面には表示せず、POST送信時にコントローラーへIDを引き継ぐ
+        -->
+        <input type="hidden" th:field="*{id}">
+
+        <!-- 氏名入力エリア -->
+        <div>
+            <label>氏名</label>
+            <!-- 【入力バインド】th:field="*{name}" により name="name", id="name", value 属性を自動出力 -->
+            <input type="text" th:field="*{name}">
+            <!-- 【エラー表示】name フィールドにValidationエラーが存在する場合、エラーメッセージを出力 -->
+            <p th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></p>
+        </div>
+
+        <!-- フリガナ入力エリア -->
+        <div>
+            <label>フリガナ</label>
+            <input type="text" th:field="*{furigana}">
+            <p th:if="${#fields.hasErrors('furigana')}" th:errors="*{furigana}"></p>
+        </div>
+
+        <!-- 郵便番号入力エリア -->
+        <div>
+            <label>郵便番号</label>
+            <input type="text" th:field="*{postalCode}">
+            <p th:if="${#fields.hasErrors('postalCode')}" th:errors="*{postalCode}"></p>
+        </div>
+
+        <!-- 住所入力エリア -->
+        <div>
+            <label>住所</label>
+            <input type="text" th:field="*{address}">
+            <p th:if="${#fields.hasErrors('address')}" th:errors="*{address}"></p>
+        </div>
+
+        <!-- 電話番号入力エリア -->
+        <div>
+            <label>電話番号</label>
+            <input type="text" th:field="*{phoneNumber}">
+            <p th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}"></p>
+        </div>
+
+        <!-- メールアドレス入力エリア -->
+        <div>
+            <label>メールアドレス</label>
+            <input type="text" th:field="*{email}">
+            <p th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></p>
+        </div>
+
+        <!-- 更新送信ボタン -->
+        <div>
+            <button type="submit">更新</button>
+        </div>
+    </form>
+
+    <!-- 【共通パーツ読み込み】フッター部分を挿入 -->
+    <div th:replace="~{fragment :: footer}"></div>
+</body>

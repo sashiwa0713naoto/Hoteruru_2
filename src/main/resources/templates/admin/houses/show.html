@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <!-- 管理者専用フラグメントの読み込み -->
+    <div th:replace="~{admin/fragment :: meta}"></div>
+    <div th:replace="~{admin/fragment :: styles}"></div>
+    <title>民宿詳細</title>
+</head>
+<body>
+    <div class="samuraitravel-wrapper">
+        <!-- ヘッダー（管理者用） -->
+        <div th:replace="~{admin/fragment :: header}"></div>
+
+        <main>
+            <div class="container pt-4 pb-5 samuraitravel-container">
+                <div class="row justify-content-center">
+                    <div class="col-xl-7 col-lg-8 col-md-10">
+                        <!-- パンくずリスト -->
+                        <nav class="mb-4" aria-label="breadcrumb">
+                            <ol class="breadcrumb mb-0">
+                                <li class="breadcrumb-item"><a th:href="@{/admin/houses}">民宿一覧</a></li>
+                                <li class="breadcrumb-item active" aria-current="page">民宿詳細</li>
+                            </ol>
+                        </nav>
+
+                        <!-- タイトル ＆ 編集リンク -->
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h1 class="fs-2 mb-0" th:text="${house.name}"></h1>
+                            <a th:href="@{/admin/houses/__${house.id}__/edit}" class="text-decoration-none fw-bold">編集</a>
+                        </div>
+
+                        <!-- 民宿画像表示（キャッシュバスティング処理 & フォールバック表示） -->
+                        <div class="mb-3 text-center">
+                            <img th:if="${house.imageName}" th:src="@{'/storage/' + ${house.imageName} + '?t=' + ${#dates.createNow().time}}" class="w-100 img-fluid rounded shadow-sm" alt="民宿画像">
+                            <img th:unless="${house.imageName}" th:src="@{/images/nolimage.png}" class="w-100 img-fluid rounded shadow-sm" alt="NO IMAGE">
+                        </div>
+
+                        <!-- 民宿詳細情報テーブル -->
+                        <table class="table table-striped">
+                            <tbody>
+                                <tr>
+                                    <th scope="row" style="width: 30%;">ID</th>
+                                    <td th:text="${house.id}"></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">民宿名</th>
+                                    <td th:text="${house.name}"></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">説明</th>
+                                    <td th:text="${house.description}"></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">宿泊料金</th>
+                                    <td>
+                                        <!-- 数値ユーティリティで3桁区切りカンマ（例: 10,000円）にフォーマット -->
+                                        <span th:text="${#numbers.formatInteger(house.price, 1, 'COMMA') + '円'}"></span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">定員</th>
+                                    <td><span th:text="${house.capacity + '人'}"></span></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">郵便番号</th>
+                                    <td th:text="${house.postalCode}"></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">住所</th>
+                                    <td th:text="${house.address}"></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">電話番号</th>
+                                    <td th:text="${house.phoneNumber}"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <!-- 編集画面への遷移ボタン -->
+                        <div class="d-flex justify-content-center my-4">
+                            <a th:href="@{/admin/houses/__${house.id}__/edit}" class="btn btn-primary text-white shadow-sm w-50 samuraitravel-btn">編集する</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- フッター（管理者用） -->
+        <div th:replace="~{admin/fragment :: footer}"></div>
+    </div>
+
+    <!-- Bootstrap JS（管理者用） -->
+    <div th:replace="~{admin/fragment :: scripts}"></div>
+</body>
+</html>

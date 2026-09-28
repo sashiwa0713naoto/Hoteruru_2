@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+    <head>
+        <!-- 1. メタ情報の共通フラグメント -->
+        <th:block th:fragment="meta">
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+        </th:block>
+
+        <!-- 2. CSS・フォントリンク等の共通フラグメント -->
+        <th:block th:fragment="styles">
+            <!-- Bootstrap 5 CSS -->
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+            <!-- Google Fonts (Noto Sans JP) -->
+            <link rel="preconnect" href="https://fonts.googleapis.com">
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+            <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+            <!-- アプリケーション独自CSS -->
+            <link th:href="@{/css/style.css}" rel="stylesheet">
+            <title>SAMURAI Travel</title>
+        </th:block>
+    </head>
+    <body>
+        <!-- 3. 共通ヘッダー（ナビゲーションバー）のフラグメント -->
+        <!-- th:remove="tag" により、埋め込み時に不要な親divタグを出力せず中身だけを展開 -->
+        <div th:fragment="header" th:remove="tag">
+            <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm samuraitravel-navbar">
+                <div class="container samuraitravel-container">
+                    <!-- ロゴリンク：ログイン中は民宿一覧（/houses）へ、未ログイン時はトップ（/）へ動的切り替え -->
+                    <a class="navbar-brand" th:href="${#authorization.expression('isAuthenticated()')} ? @{/houses} : @{/}">
+                        <img class="samuraitravel-logo me-1" th:src="@{/images/logo.png}" alt="SAMURAI Travel">
+                    </a>
+
+                    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                        <ul class="navbar-nav ms-auto">
+                            <!-- 未ログインユーザー用メニュー -->
+                            <li class="nav-item" sec:authorize="isAnonymous()">
+                                <a class="nav-link" th:href="@{/login}">ログイン</a>
+                            </li>
+                            <li class="nav-item" sec:authorize="isAnonymous()">
+                                <a class="nav-link" th:href="@{/signup}">会員登録</a>
+                            </li>
+
+                            <!-- ログイン済み（一般ユーザー ROLE_GENERAL）用ドロップダウンメニュー -->
+                            <li class="nav-item dropdown" sec:authorize="hasRole('ROLE_GENERAL')">
+                                <a id="navbarDropdownGeneral" class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <!-- ログイン中ユーザーの氏名を表示 -->
+                                    <span sec:authentication="principal.user.name"></span>
+                                </a>
+                                <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownGeneral">
+                                    <!-- JavaScript で非表示フォームを POST 送信して安全にログアウト -->
+                                    <a class="dropdown-item samuraitravel-dropdown-item" href="#" onclick="document.getElementById('logout-form').submit(); return false;">
+                                        ログアウト
+                                    </a>
+                                    <form class="d-none" id="logout-form" th:action="@{/logout}" method="post"></form>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+        </div>
+
+        <!-- 4. 共通フッターのフラグメント -->
+        <div th:fragment="footer" th:remove="tag">
+            <footer>
+                <div class="d-flex justify-content-center align-items-center h-100">
+                    <p class="text-center text-muted small mb-0">&copy; SAMURAI Travel All rights reserved.</p>
+                </div>
+            </footer>
+        </div>
+
+        <!-- 5. 共通 JavaScript スクリプトのフラグメント -->
+        <div th:fragment="scripts" th:remove="tag">
+            <!-- Bootstrap 5 JS Bundle -->
+            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+        </div>
+    </body>
+</html>

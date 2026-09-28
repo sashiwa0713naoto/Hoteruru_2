@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<!-- 【名前空間の設定】Thymeleafの動的タグ（th:text, th:href など）を有効化 -->
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>会員情報</title>
+</head>
+<body>
+    <!-- 【共通パーツ読み込み】fragment.html から header パーツを差し替え挿入 -->
+    <div th:replace="~{fragment :: header}"></div>
+
+    <h1>会員情報</h1>
+
+    <!-- 
+      【動的リンク設定】
+      th:href="@{/user/edit}" : 会員情報編集画面への遷移URLを動的に生成
+    -->
+    <a th:href="@{/user/edit}">編集</a>
+
+    <!-- 
+      【成功メッセージの表示 (条件分岐)】
+      th:if="${successMessage}" : Controllerから RedirectAttributes などで渡された successMessage が存在する場合のみ div を表示
+      th:text="${successMessage}" : 成功メッセージ（例：「会員情報を更新しました。」）を出力
+    -->
+    <div th:if="${successMessage}">
+        <span th:text="${successMessage}"></span>
+    </div>
+
+    <!-- 
+      【会員情報の表示】
+      th:text="${user.getName()}" : Controllerから渡された user オブジェクトの各ゲッターを呼び出して表示
+      ※ Thymeleafでは ${user.name} と書いても自動的に getName() が呼び出されます
+    -->
+    <p>氏名：<span th:text="${user.getName()}"></span></p>
+    <p>フリガナ：<span th:text="${user.getFurigana()}"></span></p>
+    <p>郵便番号：<span th:text="${user.getPostalCode()}"></span></p>
+    <p>住所：<span th:text="${user.getAddress()}"></span></p>
+    <p>電話番号：<span th:text="${user.getPhoneNumber()}"></span></p>
+    <p>メールアドレス：<span th:text="${user.getEmail()}"></span></p>
+
+    <!-- 【共通パーツ読み込み】fragment.html から footer パーツを差し替え挿入 -->
+    <div th:replace="~{fragment :: footer}"></div>
+</body>
+</html>

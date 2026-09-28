@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <div th:replace="~{admin/fragment :: meta}"></div>
+    <div th:replace="~{admin/fragment :: styles}"></div>
+    <title>民宿一覧</title>
+</head>
+<body>
+    <div class="samuraitravel-wrapper">
+        <!-- ヘッダー（管理者用） -->
+        <div th:replace="~{admin/fragment :: header}"></div>
+
+        <main>
+            <div class="container-fluid pt-4 pb-5 samuraitravel-container">
+                <div class="row justify-content-center">
+                    <div class="col-xl-11 col-lg-12">
+                        <h1 class="mb-4 text-center fs-2">民宿一覧</h1>
+
+                        <div class="d-flex justify-content-between align-items-end flex-wrap mb-3">
+                            <!-- 検索フォーム -->
+                            <form method="get" th:action="@{/admin/houses}" class="mb-2 mb-md-0">
+                                <div class="input-group">
+                                    <!-- 検索時にも現在の並び替え順を維持するhidden -->
+                                    <input type="hidden" name="sort" th:value="${param.sort}">
+                                    <input type="text" class="form-control" name="keyword" th:value="${keyword}" placeholder="キーワード検索">
+                                    <button type="submit" class="btn btn-primary text-white shadow-sm samuraitravel-btn">検索</button>
+                                </div>
+                            </form>
+
+                            <!-- ▼ 並び替えセレクトボックス（valueとラベルを入れ替え） -->
+                            <form method="get" th:action="@{/admin/houses}" class="mb-2 mb-md-0">
+                                <input type="hidden" name="keyword" th:value="${keyword}">
+                                <select class="form-select form-select-sm" name="sort" onchange="this.form.submit()">
+                                    <option value="id,asc" th:selected="${param.sort != null and param.sort[0] == 'id,asc'}">IDが新しい順</option>
+                                    <option value="id,desc" th:selected="${param.sort != null and param.sort[0] == 'id,desc'}">IDが古い順</option>
+                                    <option value="price,asc" th:selected="${param.sort != null and param.sort[0] == 'price,asc'}">宿泊料金が安い順</option>
+                                    <option value="price,desc" th:selected="${param.sort != null and param.sort[0] == 'price,desc'}">宿泊料金が高い順</option>
+                                </select>
+                            </form>
+
+                            <!-- 新規登録ボタン -->
+                            <a th:href="@{/admin/houses/register}" class="btn btn-primary text-white shadow-sm samuraitravel-btn">新規登録</a>
+                        </div>
+
+                        <!-- 成功メッセージ -->
+                        <div th:if="${successMessage}" class="alert alert-info" role="alert">
+                            <span th:text="${successMessage}"></span>
+                        </div>
+
+                        <!-- 民宿一覧テーブル -->
+                        <table class="table table-striped align-middle">
+                            <thead>
+                                <tr>
+                                    <th scope="col">ID</th>
+                                    <th scope="col">民宿画像</th>
+                                    <th scope="col">民宿名</th>
+                                    <th scope="col">郵便番号</th>
+                                    <th scope="col">住所</th>
+                                    <th scope="col">電話番号</th>
+                                    <th scope="col" class="text-center">詳細</th>
+                                    <th scope="col" class="text-center">編集</th>
+                                    <th scope="col" class="text-center">削除</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="house : ${housePage}">
+                                    <td th:text="${house.id}"></td>
+                                    <td>
+                                        <!-- 民宿画像表示 -->
+                                        <img th:if="${house.imageName}" th:src="@{'/storage/' + ${house.imageName}}" class="img-fluid" style="width: 80px; height: 60px; object-fit: cover;" alt="民宿画像">
+                                        <span th:unless="${house.imageName}">（画像なし）</span>
+                                    </td>
+                                    <td th:text="${house.name}"></td>
+                                    <td th:text="${house.postalCode}"></td>
+                                    <td th:text="${house.address}"></td>
+                                    <td th:text="${house.phoneNumber}"></td>
+                                    <td class="text-center"><a th:href="@{/admin/houses/__${house.id}__}">詳細</a></td>
+                                    <td class="text-center"><a th:href="@{/admin/houses/__${house.id}__/edit}">編集</a></td>
+                                    <td class="text-center">
+                                        <a href="#" class="text-danger" data-bs-toggle="modal" th:data-bs-target="${'#deleteHouseModal' + house.id}">削除</a>
+                                        
+                                        <!-- 削除確認モーダル -->
+                                        <div class="modal fade" th:id="${'deleteHouseModal' + house.id}" tabindex="-1" aria-labelledby="${'deleteHouseModalLabel' + house.id}" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" th:id="${'deleteHouseModalLabel' + house.id}" th:text="${house.name + 'を削除してもよろしいですか？'}"></h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <form method="post" th:action="@{/admin/houses/__${house.id}__/delete}">
+                                                            <button type="submit" class="btn btn-danger text-white shadow-sm">削除</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <!-- ページネーション -->
+                        <div th:if="${housePage.totalPages > 1}" class="d-flex justify-content-center">
+                            <nav aria-label="民宿一覧ページ">
+                                <ul class="pagination">
+                                    <li class="page-item" th:classappend="${housePage.first} ? 'disabled'">
+                                        <a class="page-link" th:href="@{/admin/houses(page = ${housePage.number - 1}, keyword = ${keyword}, sort = ${param.sort})}" aria-label="前へ">前へ</a>
+                                    </li>
+                                    <li class="page-item" th:classappend="${i == housePage.number} ? 'active'" th:each="i : ${#numbers.sequence(0, housePage.totalPages - 1)}">
+                                        <a class="page-link" th:href="@{/admin/houses(page = ${i}, keyword = ${keyword}, sort = ${param.sort})}" th:text="${i + 1}"></a>
+                                    </li>
+                                    <li class="page-item" th:classappend="${housePage.last} ? 'disabled'">
+                                        <a class="page-link" th:href="@{/admin/houses(page = ${housePage.number + 1}, keyword = ${keyword}, sort = ${param.sort})}" aria-label="次へ">次へ</a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- フッター（管理者用） -->
+        <div th:replace="~{admin/fragment :: footer}"></div>
+    </div>
+
+    <!-- Bootstrap JS（管理者用） -->
+    <div th:replace="~{admin/fragment :: scripts}"></div>
+</body>
+</html>

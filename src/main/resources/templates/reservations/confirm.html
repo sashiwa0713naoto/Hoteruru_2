@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<!-- 【名前空間の設定】Thymeleafの動的タグ（th:text, th:actionなど）を有効化 -->
+<html xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <!-- 【共通パーツ読み込み】fragment.html から meta と styles の部品を差し替え挿入 -->
+        <div th:replace="~{fragment :: meta}"></div>
+        <div th:replace="~{fragment :: styles}"></div>
+        <title>予約内容確認</title>
+    </head>
+    <body>
+        <div class="moattravel-wrapper">
+            <!-- 【共通パーツ読み込み】ヘッダー部分を挿入 -->
+            <div th:replace="~{fragment :: header}"></div>
+
+            <!-- メインコンテンツ -->
+            <main>
+                <div class="container pt-4 pb-4 moattravel-container">
+                    <div class="row justify-content-center">
+                        <div class="col-xl-5 col-lg-6 col-md-8">
+                            <h1 class="mb-4 text-center">予約内容確認</h1>
+
+                            <!-- 【フォームオブジェクト指定】Controllerから渡された reservationRegisterForm を基準（th:object）に設定 -->
+                            <div class="container mb-4" th:object="${reservationRegisterForm}">
+                                <!-- チェックイン日 -->
+                                <div class="row pb-2 mb-2 border-bottom">
+                                    <div class="col-4">
+                                        <span class="fw-bold">チェックイン</span>
+                                    </div>
+                                    <div class="col">
+                                        <!-- 【選択変数式】*{checkinDate} で reservationRegisterForm.checkinDate の値を表示 -->
+                                        <span th:text="*{checkinDate}"></span>
+                                    </div>
+                                </div>
+
+                                <!-- チェックアウト日 -->
+                                <div class="row pb-2 mb-2 border-bottom">
+                                    <div class="col-4">
+                                        <span class="fw-bold">チェックアウト</span>
+                                    </div>
+                                    <div class="col">
+                                        <span th:text="*{checkoutDate}"></span>
+                                    </div>
+                                </div>
+
+                                <!-- 宿泊人数 -->
+                                <div class="row pb-2 mb-2 border-bottom">
+                                    <div class="col-4">
+                                        <span class="fw-bold">宿泊人数</span>
+                                    </div>
+                                    <div class="col">
+                                        <span th:text="*{numberOfPeople} + '名'"></span>
+                                    </div>
+                                </div>
+
+                                <!-- 宿泊料金 -->
+                                <div class="row pb-2 mb-2 border-bottom">
+                                    <div class="col-4">
+                                        <span class="fw-bold">宿泊料金</span>
+                                    </div>
+                                    <div class="col">
+                                        <!-- 【数値フォーマット】#numbers.formatInteger で金額を3桁カンマ区切り（例: 10,000円）に整形 -->
+                                        <span th:text="*{#numbers.formatInteger(amount, 1, 'COMMA') + '円'}"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 決済ボタン・フォームエリア -->
+                            <div class="d-flex justify-content-center">
+                                <!-- 
+                                  【予約作成・決済フォーム】
+                                  th:action : 予約登録URLヘPOST送信（URLパス変数に house.id をセット）
+                                  th:object : フォームデータをControllerへ送信するため同じオブジェクトバインドを指定
+                                -->
+                                <form th:action="@{/houses/{id}/reservations/create(id=${house.id})}" method="post" th:object="${reservationRegisterForm}" class="w-100">
+                                    <!-- 
+                                      【隠しフィールド (hidden)】
+                                      確認画面で表示した各種予約パラメータ（ID、日付、人数、料金）を
+                                      次の処理（決済・DB登録）へPOSTパラメータとして安全に引き継ぐ
+                                    -->
+                                    <input type="hidden" th:field="*{houseId}" />
+                                    <input type="hidden" th:field="*{userId}" />
+                                    <input type="hidden" th:field="*{checkinDate}" />
+                                    <input type="hidden" th:field="*{checkoutDate}" />
+                                    <input type="hidden" th:field="*{numberOfPeople}" />
+                                    <input type="hidden" th:field="*{amount}" />
+
+                                    <!-- 【決済送信ボタン】id="paymentButton" は Stripe などの JavaScript 連携で使用 -->
+                                    <button type="submit" id="paymentButton" class="btn btn-primary text-white shadow-sm w-100">決済する</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- 【共通パーツ読み込み】フッター部分を挿入 -->
+            <div th:replace="~{fragment :: footer}"></div>
+        </div>
+
+        <!-- 【共通パーツ読み込み】JSライブラリ読み込み部分を挿入 -->
+        <div th:replace="~{fragment :: scripts}"></div>
+        
+        <!-- 【Stripe決済機能連携】 -->
+        <!-- Stripe公式 JavaScript SDK の読み込み -->
+        <script src="https://js.stripe.com/v3/"></script>
+        
+        <!-- 
+          【Thymeleaf JavaScriptインライン挿入】
+          th:inline="javascript" を指定することで、ControllerからModelに追加された ${sessionId} を
+          安全に JavaScript の定数 (sessionId) へ代入する
+        -->
+        <script th:inline="javascript">
+            const sessionId = /*[[${sessionId}]]*/ "sessionId";
+        </script>
+        
+        <!-- Stripeの決済処理（Checkout呼び出し等）が記述された自作JSファイルを読み込み -->
+        <script th:src="@{/js/stripe.js}"></script>
+    </body>
+</html>

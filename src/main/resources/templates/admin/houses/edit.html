@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <!-- 管理者専用フラグメントの読み込み -->
+    <div th:replace="~{admin/fragment :: meta}"></div>
+    <div th:replace="~{admin/fragment :: styles}"></div>
+    <title>民宿情報編集</title>
+</head>
+<body>
+    <div class="samuraitravel-wrapper">
+        <!-- ヘッダー（管理者用） -->
+        <div th:replace="~{admin/fragment :: header}"></div>
+
+        <main>
+            <div class="container pt-4 pb-5 samuraitravel-container">
+                <div class="row justify-content-center">
+                    <div class="col-xl-7 col-lg-8 col-md-10">
+                        <!-- パンくずリスト -->
+                        <nav class="mb-4" aria-label="breadcrumb">
+                            <ol class="breadcrumb mb-0">
+                                <li class="breadcrumb-item"><a th:href="@{/admin/houses}">民宿一覧</a></li>
+                                <li class="breadcrumb-item"><a th:href="@{/admin/houses/__${houseEditForm.id}__}">民宿詳細</a></li>
+                                <li class="breadcrumb-item active" aria-current="page">民宿情報編集</li>
+                            </ol>
+                        </nav>
+
+                        <h1 class="mb-4 text-center fs-2">民宿情報編集</h1>
+
+                        <!-- 民宿更新フォーム（画像送信のため multipart/form-data を指定） -->
+                        <form method="post" th:action="@{/admin/houses/__${houseEditForm.id}__/update}" th:object="${houseEditForm}" enctype="multipart/form-data">
+                            <!-- 識別子と現在保持している画像名を hidden で保持 -->
+                            <input type="hidden" th:field="*{id}">
+                            <input type="hidden" th:field="*{imageName}">
+
+                            <!-- 民宿名 -->
+                            <div class="form-group row mb-3">
+                                <div class="col-xl-3 col-lg-4 col-md-4">
+                                    <label for="name" class="col-form-label text-md-left fw-bold">民宿名</label>
+                                </div>
+                                <div class="col-xl-9 col-lg-8 col-md-8">
+                                    <div th:if="${#fields.hasErrors('name')}" class="text-danger small mb-2" th:errors="*{name}"></div>
+                                    <input type="text" class="form-control" th:field="*{name}" autofocus>
+                                </div>
+                            </div>
+
+                            <!-- 画像ファイルアップロード -->
+                            <div class="form-group row mb-3">
+                                <div class="col-xl-3 col-lg-4 col-md-4">
+                                    <label for="imageFile" class="col-form-label text-md-left fw-bold">民宿画像</label>
+                                </div>
+                                <div class="col-xl-9 col-lg-8 col-md-8">
+                                    <div th:if="${#fields.hasErrors('imageFile')}" class="text-danger small mb-2" th:errors="*{imageFile}"></div>
+                                    <input type="file" class="form-control" th:field="*{imageFile}">
+                                </div>
+                            </div>
+
+                            <!-- 選択中の画像プレビュー（登録済み画像を表示） -->
+                            <div class="form-group row mb-3" th:if="${houseEditForm.imageName}">
+                                <div class="col-xl-3 col-lg-4 col-md-4"></div>
+                                <div class="col-xl-9 col-lg-8 col-md-8">
+                                    <img id="imagePreview" th:src="@{'/storage/' + ${houseEditForm.imageName}}" class="w-50 img-fluid rounded" alt="現在の民宿画像">
+                                </div>
+                            </div>
+
+                            <!-- 説明 -->
+                            <div class="form-group row mb-3">
+                                <div class="col-xl-3 col-lg-4 col-md-4">
+                                    <label for="description" class="col-form-label text-md-left fw-bold">説明</label>
+                                </div>
+                                <div class="col-xl-9 col-lg-8 col-md-8">
+                                    <div th:if="${#fields.hasErrors('description')}" class="text-danger small mb-2" th:errors="*{description}"></div>
+                                    <textarea class="form-control" th:field="*{description}" cols="30" rows="5"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- 宿泊料金 -->
+                            <div class="form-group row mb-3">
+                                <div class="col-xl-3 col-lg-4 col-md-4">
+                                    <label for="price" class="col-form-label text-md-left fw-bold">宿泊料金（単位：円）</label>
+                                </div>
+                                <div class="col-xl-9 col-lg-8 col-md-8">
+                                    <div th:if="${#fields.hasErrors('price')}" class="text-danger small mb-2" th:errors="*{price}"></div>
+                                    <input type="number" class="form-control" th:field="*{price}">
+                                </div>
+                            </div>
+
+                            <!-- 定員 -->
+                            <div class="form-group row mb-3">
+                                <div class="col-xl-3 col-lg-4 col-md-4">
+                                    <label for="capacity" class="col-form-label text-md-left fw-bold">定員（単位：人）</label>
+                                </div>
+                                <div class="col-xl-9 col-lg-8 col-md-8">
+                                    <div th:if="${#fields.hasErrors('capacity')}" class="text-danger small mb-2" th:errors="*{capacity}"></div>
+                                    <input type="number" class="form-control" th:field="*{capacity}">
+                                </div>
+                            </div>
+
+                            <!-- 郵便番号 -->
+                            <div class="form-group row mb-3">
+                                <div class="col-xl-3 col-lg-4 col-md-4">
+                                    <label for="postalCode" class="col-form-label text-md-left fw-bold">郵便番号</label>
+                                </div>
+                                <div class="col-xl-9 col-lg-8 col-md-8">
+                                    <div th:if="${#fields.hasErrors('postalCode')}" class="text-danger small mb-2" th:errors="*{postalCode}"></div>
+                                    <input type="text" class="form-control" th:field="*{postalCode}">
+                                </div>
+                            </div>
+
+                            <!-- 住所 -->
+                            <div class="form-group row mb-3">
+                                <div class="col-xl-3 col-lg-4 col-md-4">
+                                    <label for="address" class="col-form-label text-md-left fw-bold">住所</label>
+                                </div>
+                                <div class="col-xl-9 col-lg-8 col-md-8">
+                                    <div th:if="${#fields.hasErrors('address')}" class="text-danger small mb-2" th:errors="*{address}"></div>
+                                    <input type="text" class="form-control" th:field="*{address}">
+                                </div>
+                            </div>
+
+                            <!-- 電話番号 -->
+                            <div class="form-group row mb-3">
+                                <div class="col-xl-3 col-lg-4 col-md-4">
+                                    <label for="phoneNumber" class="col-form-label text-md-left fw-bold">電話番号</label>
+                                </div>
+                                <div class="col-xl-9 col-lg-8 col-md-8">
+                                    <div th:if="${#fields.hasErrors('phoneNumber')}" class="text-danger small mb-2" th:errors="*{phoneNumber}"></div>
+                                    <input type="text" class="form-control" th:field="*{phoneNumber}">
+                                </div>
+                            </div>
+
+                            <!-- 更新ボタン -->
+                            <div class="form-group d-flex justify-content-center my-4">
+                                <button type="submit" class="btn btn-primary text-white shadow-sm w-50 samuraitravel-btn">更新</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- フッター（管理者用） -->
+        <div th:replace="~{admin/fragment :: footer}"></div>
+    </div>
+
+    <!-- Bootstrap JS（管理者用） -->
+    <div th:replace="~{admin/fragment :: scripts}"></div>
+
+    <!-- ファイル選択時にその場でリアルタイムプレビュー表示するJavaScript -->
+    <script>
+        document.getElementById('imageFile').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imagePreview = document.getElementById('imagePreview');
+                    if (imagePreview) {
+                        imagePreview.src = e.target.result;
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+</body>
+</html>
