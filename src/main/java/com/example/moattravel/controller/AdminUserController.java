@@ -1,141 +1,113 @@
-package com.example.moattravel.controller; // 1. このクラスが属するパッケージ（フォルダ構成）を指定
+package com.example.moattravel.controller; // 管理者のための会員管理コントローラー
 
-// Spring Data Pageableおよびソート機能関連のクラスをインポート
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort.Direction;
-import org.springframework.data.web.PageableDefault;
-// Spring MVC（コントローラー・Web機能）関連のクラスをインポート
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.data.domain.Page; // ページごとにデータを分割して扱うための機能を読み込む
+import org.springframework.data.domain.Pageable; // ページ番号や表示件数の情報を扱うための仕組みを読み込む
+import org.springframework.data.domain.Sort.Direction; // データの並び順（昇順・降順）を指定する仕組みを読み込む
+import org.springframework.data.web.PageableDefault; // ページの初期設定を行うための目印を読み込む
+import org.springframework.stereotype.Controller; // このクラスがWebからの窓口であることを示す目印を読み込む
+import org.springframework.ui.Model; // 画面にデータを渡すための箱を読み込む
+import org.springframework.validation.BindingResult; // 入力内容に間違いがないかチェックした結果を受け取る仕組みを読み込む
+import org.springframework.validation.annotation.Validated; // 入力チェックの実行を指示する目印を読み込む
+import org.springframework.web.bind.annotation.GetMapping; // 画面を表示するためのリクエストを受け取る目印を読み込む
+import org.springframework.web.bind.annotation.ModelAttribute; // 送られてきたフォームのデータをオブジェクトにまとめる目印を読み込む
+import org.springframework.web.bind.annotation.PathVariable; // アドレスの一部にある番号などを受け取る目印を読み込む
+import org.springframework.web.bind.annotation.PostMapping; // データを保存・更新するためのリクエストを受け取る目印を読み込む
+import org.springframework.web.bind.annotation.RequestMapping; // 共通のアドレスを設定する目印を読み込む
+import org.springframework.web.bind.annotation.RequestParam; // アドレスの後ろにつくパラメータを受け取る目印を読み込む
+import org.springframework.web.servlet.mvc.support.RedirectAttributes; // 別の画面に一時的なメッセージを渡す仕組みを読み込む
 
-import com.example.moattravel.entity.User;
-import com.example.moattravel.form.UserEditForm;
-import com.example.moattravel.repository.UserRepository;
-import com.example.moattravel.service.UserService;
+import com.example.moattravel.entity.User; // 会員のデータベース情報を表す仕組みを読み込む
+import com.example.moattravel.form.UserEditForm; // 会員編集時の入力内容を一時的に保管する仕組みを読み込む
+import com.example.moattravel.repository.UserRepository; // 会員のデータをデータベースから探したり保存したりする仕組みを読み込む
+import com.example.moattravel.service.UserService; // 会員に関する様々な処理のルールが集まった仕組みを読み込む
 
-@Controller // 2. Spring Bootに「このクラスはWebリクエストを処理するコントローラーです」と認識させる
-@RequestMapping("/admin/users") // 3. このクラス内のすべてのメソッドの基準URLを "/admin/users" に設定
-public class AdminUserController {
+@Controller // このクラスがWebの画面やリクエストを制御する役割を持つことを伝える
+@RequestMapping("/admin/users") // この中にある処理はすべて「/admin/users」というアドレスから始まるようにする
+public class AdminUserController { // 管理者用の会員管理をまとめたクラスの定義開始
 
-    // 4. データベース操作およびビジネスロジックを行う依存クラス（フィールド）を宣言
-    private final UserRepository userRepository;
-    private final UserService userService;
+    private final UserRepository userRepository; // データベース操作を行う仕組みを入れる変数を用意する
+    private final UserService userService; // 会員の処理を行う仕組みを入れる変数を用意する
 
-    // 5. コンストラクタインジェクション（Springが自動で依存インスタンスを注入する）
-    public AdminUserController(UserRepository userRepository, UserService userService) {
-        this.userRepository = userRepository;
-        this.userService = userService;
+    public AdminUserController(UserRepository userRepository, UserService userService) { // 必要な仕組みを自動で受け取るためのコンストラクタ
+        this.userRepository = userRepository; // 受け取ったデータベース操作の仕組みをクラス内で使えるようにセットする
+        this.userService = userService; // 受け取った会員処理の仕組みをクラス内で使えるようにセットする
     }
 
-    /**
-     * 会員一覧画面表示・検索処理（GET /admin/users）
-     */
-    @GetMapping // 6. GETリクエスト（/admin/users）を受け付ける
-    public String index(@RequestParam(name = "keyword", required = false) String keyword, // 7. 検索キーワードを受け取る（任意）
-                        @PageableDefault(page = 0, size = 10, sort = "id", direction = Direction.ASC) Pageable pageable, // 8. デフォルトのページネーション・ソート設定（IDの昇順、10件）
-                        Model model) 
-    {
-        Page<User> userPage;
+    @GetMapping // 「/admin/users」へのアクセスがあったときにこのメソッドを動かす
+    public String index(@RequestParam(name = "keyword", required = false) String keyword, // 検索キーワードが指定されていれば受け取る
+                        @PageableDefault(page = 0, size = 10, sort = "id", direction = Direction.ASC) Pageable pageable, // 一覧のページ番号や並び順の設定を指定する
+                        Model model) { // 画面にデータを送るための箱を受け取る
+        Page<User> userPage; // ページ分割された会員のデータを保存する変数を用意する
 
-        // 9. 検索キーワードの有無に応じて取得処理を分岐
-        if (keyword != null && !keyword.isEmpty()) {
-            // キーワードがある場合：氏名またはフリガナで部分一致検索（曖昧検索）
-            userPage = userRepository.findByNameLikeOrFuriganaLike("%" + keyword + "%", "%" + keyword + "%", pageable);
-        } else {
-            // キーワードがない場合：全会員を取得（ページネーション適用）
-            userPage = userRepository.findAll(pageable);
+        if (keyword != null && !keyword.isEmpty()) { // 検索の言葉が空ではない場合
+            userPage = userRepository.findByNameLikeOrFuriganaLike("%" + keyword + "%", "%" + keyword + "%", pageable); // 名前やフリガナからキーワードに似ているデータを探す
+        } else { // 検索の言葉がない場合
+            userPage = userRepository.findAll(pageable); // すべての会員データをページごとに取得する
         }
 
-        // 10. View（HTML）へ渡すデータをModelに登録
-        model.addAttribute("userPage", userPage);
-        model.addAttribute("keyword", keyword);
+        model.addAttribute("userPage", userPage); // 取得したデータのページ情報を画面に渡す
+        model.addAttribute("keyword", keyword); // 検索に使った言葉を画面に渡す
 
-        return "admin/users/index"; // 11. 表示するHTMLテンプレート（admin/users/index.html）を返す
+        return "admin/users/index"; // 会員一覧画面のファイルを表示するように指示する
     }
 
-    /**
-     * 会員詳細画面表示（GET /admin/users/{id}）
-     */
-    @GetMapping("/{id}") // 12. GETリクエスト（/admin/users/{id}）を受け付ける
-    public String show(@PathVariable(name = "id") Integer id, Model model) { // 13. URLパスから会員IDを取得
-        User user = userRepository.findById(id).orElse(null); // 14. 指定されたIDの会員を取得（存在しない場合はnull）
+    @GetMapping("/{id}") // 「/admin/users/数字」というアクセスがあったときにこのメソッドを動かす
+    public String show(@PathVariable(name = "id") Integer id, Model model) { // アドレスに含まれる番号と画面にデータを送る箱を受け取る
+        User user = userRepository.findById(id).orElse(null); // 指定された番号の会員データをデータベースから探して取得する
         
-        if (user == null) {
-            return "redirect:/admin/users"; // 15. 会員が存在しない場合は一覧ページへリダイレクト
+        if (user == null) { // 指定された番号の会員データが見つからなかった場合
+            return "redirect:/admin/users"; // 一覧画面へ強制的に移動させる
         }
 
-        model.addAttribute("user", user); // HTMLへ表示対象の会員データを渡す
+        model.addAttribute("user", user); // 見つかった会員データを画面に渡す
 
-        return "admin/users/show"; // admin/users/show.html を表示
+        return "admin/users/show"; // 会員詳細画面のファイルを表示するように指示する
     }
 
-    /**
-     * 会員編集画面表示（GET /admin/users/{id}/edit）
-     */
-    @GetMapping("/{id}/edit")
-    public String edit(@PathVariable(name = "id") Integer id, Model model) {
-        User user = userRepository.findById(id).orElse(null);
-        if (user == null) {
-            return "redirect:/admin/users";
+    @GetMapping("/{id}/edit") // 「/admin/users/数字/edit」へのアクセスがあったときにこのメソッドを動かす
+    public String edit(@PathVariable(name = "id") Integer id, Model model) { // アドレスに含まれる番号と画面にデータを送る箱を受け取る
+        User user = userRepository.findById(id).orElse(null); // 編集する対象の会員データをデータベースから探す
+        if (user == null) { // 対象の会員データが見つからなかった場合
+            return "redirect:/admin/users"; // 一覧画面へ強制的に移動させる
         }
 
-        // 16. DBから取得したEntity（User）の情報を編集用Form（UserEditForm）へセット
-        UserEditForm userEditForm = new UserEditForm(
-            user.getId(),
-            user.getName(),
-            user.getFurigana(),
-            user.getPostalCode(),
-            user.getAddress(),
-            user.getPhoneNumber(),
-            user.getEmail()
+        UserEditForm userEditForm = new UserEditForm( // データベースから取得したデータを編集用の箱に移し替える
+            user.getId(), // 会員の番号をセットする
+            user.getName(), // 会員の名前をセットする
+            user.getFurigana(), // 会員のフリガナをセットする
+            user.getPostalCode(), // 郵便番号をセットする
+            user.getAddress(), // 住所をセットする
+            user.getPhoneNumber(), // 電話番号をセットする
+            user.getEmail() // メールアドレスをセットする
         );
 
-        model.addAttribute("userEditForm", userEditForm);
+        model.addAttribute("userEditForm", userEditForm); // 編集用のデータを画面に渡す
 
-        return "admin/users/edit"; // admin/users/edit.html を表示
+        return "admin/users/edit"; // 会員編集画面のファイルを表示するように指示する
     }
 
-    /**
-     * 会員情報更新処理（POST /admin/users/{id}/update）
-     */
-    @PostMapping("/{id}/update") // 17. POSTリクエスト（/admin/users/{id}/update）を受け付ける
-    public String update(@PathVariable(name = "id") Integer id,
-                         @ModelAttribute @Validated UserEditForm userEditForm, // 18. フォームデータ取得と入力チェック（バリデーション）
-                         BindingResult bindingResult, // 19. バリデーション結果の保持
-                         RedirectAttributes redirectAttributes) { // 20. リダイレクト先へメッセージを渡すためのオブジェクト
+    @PostMapping("/{id}/update") // 「/admin/users/数字/update」へのデータの送信があったときにこのメソッドを動かす
+    public String update(@PathVariable(name = "id") Integer id, // アドレスに含まれる番号を受け取る
+                         @ModelAttribute @Validated UserEditForm userEditForm, // 編集された入力データをチェックして受け取る
+                         BindingResult bindingResult, // 入力チェックの結果を受け取る
+                         RedirectAttributes redirectAttributes) { // 移動先の画面にメッセージを渡す仕組みを受け取る
         
-        // 21. 入力エラーがある場合は編集画面へ戻る
-        if (bindingResult.hasErrors()) {
-            return "admin/users/edit";
+        if (bindingResult.hasErrors()) { // 入力内容にエラーがある場合
+            return "admin/users/edit"; // 編集画面に戻す
         }
 
-        // 22. 更新処理を実行し、完了メッセージを設定して詳細画面へリダイレクト
-        userService.update(userEditForm);
-        redirectAttributes.addFlashAttribute("successMessage", "会員情報を編集しました。");
+        userService.update(userEditForm); // 会員データの更新処理を実行する
+        redirectAttributes.addFlashAttribute("successMessage", "会員情報を編集しました。"); // 更新成功のメッセージを一時保存する
 
-        return "redirect:/admin/users/" + id; // 編集した会員の詳細画面へリダイレクト
+        return "redirect:/admin/users/" + id; // 編集した会員の詳細画面に移動する
     }
 
-    /**
-     * 会員削除処理（POST /admin/users/{id}/delete）
-     */
-    @PostMapping("/{id}/delete") // 23. POSTリクエスト（/admin/users/{id}/delete）を受け付ける
-    public String delete(@PathVariable(name = "id") Integer id, RedirectAttributes redirectAttributes) {
-        // 24. サービスクラスの削除処理（ロジック）を呼び出して会員を削除
-        userService.deleteUser(id);
+    @PostMapping("/{id}/delete") // 「/admin/users/数字/delete」へのデータの送信があったときにこのメソッドを動かす
+    public String delete(@PathVariable(name = "id") Integer id, RedirectAttributes redirectAttributes) { // アドレスに含まれる番号とメッセージを渡す仕組みを受け取る
+        userService.deleteUser(id); // 指定された番号の会員データを削除する処理を実行する
         
-        redirectAttributes.addFlashAttribute("successMessage", "会員を削除しました。");
+        redirectAttributes.addFlashAttribute("successMessage", "会員を削除しました。"); // 削除成功のメッセージを一時保存する
 
-        return "redirect:/admin/users"; // 削除後は一覧ページへリダイレクト
+        return "redirect:/admin/users"; // 削除が終わったら一覧画面に移動する
     }
-}
+} // 管理者用の会員管理コントローラークラスの終わり

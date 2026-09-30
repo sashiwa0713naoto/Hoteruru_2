@@ -1,66 +1,64 @@
-package com.example.moattravel.controller; // 1. このクラスが属するパッケージ（フォルダ構成）を指定
+package com.example.moattravel.controller; //一般ユーザー向けの民宿一覧表示、詳細表示、キーワード・エリア検索などの機能（Webリクエスト）を統括・制御するコントローラークラス。
 
 // Spring Data Pageableおよびソート機能関連のクラスをインポート
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort.Direction;
-import org.springframework.data.web.PageableDefault;
+import org.springframework.data.domain.Page; // 検索結果や全件データをページ分割（ページネーション）して扱うためのクラスを読み込む
+import org.springframework.data.domain.Pageable; // ページ番号、1ページあたりの表示件数、ソート条件などを保持するインターフェースを読み込む
+import org.springframework.data.domain.Sort.Direction; // ソートの方向（昇順・降順）を指定するためのクラスを読み込む
+import org.springframework.data.web.PageableDefault; // コントローラーの引数でページネーションのデフォルト設定（初期ページや表示件数など）を指定するためのアノテーションを読み込む
 // Spring MVC（コントローラー・Web機能）関連のクラスをインポート
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.stereotype.Controller; // このクラスがSpring MVCのコントローラー（Webリクエストを処理する役割）であることを示すアノテーションを読み込む
+import org.springframework.ui.Model; // コントローラーからView（HTMLテンプレート）へデータを渡すためのコンテナクラスを読み込む
+import org.springframework.web.bind.annotation.GetMapping; // HTTPのGETメソッド（データの取得・画面表示）のリクエストをマッピングするためのアノテーションを読み込む
+import org.springframework.web.bind.annotation.PathVariable; // URLのパスの一部（例: /houses/{id} の数値など）をメソッドの引数として受け取るためのアノテーションを読み込む
+import org.springframework.web.bind.annotation.RequestMapping; // コントローラー全体やメソッドの共通URLプレフィックスを設定するためのアノテーションを読み込む
+import org.springframework.web.bind.annotation.RequestParam; // URLのクエリパラメータ（例: ?keyword=...）の値を受け取るためのアノテーションを読み込む
 
 // アプリケーション内のEntity・Form・Repositoryをインポート
-import com.example.moattravel.entity.House;
-import com.example.moattravel.form.ReservationInputForm;
-import com.example.moattravel.repository.HouseRepository;
+import com.example.moattravel.entity.House; // データベースのhousesテーブルと1対1で対応するエンティティクラスを読み込む
+import com.example.moattravel.form.ReservationInputForm; // 予約入力時のフォームデータを保持するクラスを読み込む
+import com.example.moattravel.repository.HouseRepository; // データベースに対する民宿データの検索・取得などの操作を行うリポジトリを読み込む
 
-@Controller // 2. Spring Bootに「このクラスはWebリクエストを処理するコントローラーです」と認識させる
-@RequestMapping("/houses") // 3. このクラス内のすべてのメソッドの基準URLを "/houses" に設定
+@Controller // Spring Bootに「このクラスはWebリクエストを処理するコントローラーです」と認識させる
+@RequestMapping("/houses") // このクラス内のすべてのメソッドの基準URLを "/houses" に設定
 public class HouseController {
 
-    // 4. 民宿データの操作を行うリポジトリ（フィールド）を宣言
+    // 民宿データの操作を行うリポジトリ（フィールド）を宣言
     private final HouseRepository houseRepository;
 
-    // 5. コンストラクタインジェクション（Springが自動で依存インスタンスを注入する）
+    // コンストラクタインジェクション（Springが自動で依存インスタンスを注入する）
     public HouseController(HouseRepository houseRepository) {
         this.houseRepository = houseRepository;
     }
 
-    /**
-     * 一般ユーザー向け 民宿一覧・検索ページ表示（GET /houses）
-     */
-    @GetMapping // 6. GETリクエスト（/houses）を受け付ける
+    // 一般ユーザー向け 民宿一覧・検索ページ表示（GET /houses）
+    @GetMapping // GETリクエスト（/houses）を受け付ける
     public String index(
-            @RequestParam(name = "keyword", required = false) String keyword, // 7. 検索キーワードを取得（任意）
-            @RequestParam(name = "area", required = false) String area,       // 8. 選択されたエリア/都道府県を取得（任意）
-            @PageableDefault(page = 0, size = 10, sort = "id", direction = Direction.DESC) Pageable pageable, // 9. ページネーション・ソート初期設定（IDの降順、10件）
+            @RequestParam(name = "keyword", required = false) String keyword, // 検索キーワードを取得（任意）
+            @RequestParam(name = "area", required = false) String area,        // 選択されたエリア/都道府県を取得（任意）
+            @PageableDefault(page = 0, size = 10, sort = "id", direction = Direction.DESC) Pageable pageable, // ページネーション・ソート初期設定（IDの降順、10件）
             Model model) {
         
         Page<House> housePage;
 
-        // 10. パラメータの有無（空文字チェック含む）を判定するフラグを作成
+        // パラメータの有無（空文字チェック含む）を判定するフラグを作成
         boolean hasKeyword = (keyword != null && !keyword.isEmpty());
         boolean hasArea = (area != null && !area.isEmpty());
 
-        // 11. 検索条件（キーワード・エリア）の組み合わせによって呼び出すクエリを分岐
+        // 検索条件（キーワード・エリア）の組み合わせによって呼び出すクエリを分岐
         if (hasKeyword && hasArea) {
-            // ① キーワードとエリアの両方が指定されている場合
+            // キーワードとエリアの両方が指定されている場合
             housePage = houseRepository.findByNameLikeOrPostalCodeLikeOrAddressLikeOrPhoneNumberLikeAndAddressLike(
                 "%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%", 
                 "%" + area + "%", pageable
             );
         } else if (hasKeyword) {
-            // ② キーワードのみが指定されている場合（名称・郵便番号・住所・電話番号で曖昧検索）
+            // キーワードのみが指定されている場合（名称・郵便番号・住所・電話番号で曖昧検索）
             housePage = houseRepository.findByNameLikeOrPostalCodeLikeOrAddressLikeOrPhoneNumberLike(
                 "%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%", 
                 pageable
             );
         } else if (hasArea) {
-            // ③ エリアのみが指定されている場合（地方区分ごとに含まれる都道府県を検索）
+            // エリアのみが指定されている場合（地方区分ごとに含まれる都道府県を検索）
             switch (area) {
                 case "北海道・東北":
                     housePage = houseRepository.findByHokkaidoTohoku(
@@ -96,30 +94,28 @@ public class HouseController {
                     break;
             }
         } else {
-            // ④ 条件指定がない場合：全件を取得（ページネーション適用）
+            // 条件指定がない場合：全件を取得（ページネーション適用）
             housePage = houseRepository.findAll(pageable);
         }
 
-        // 12. View（HTML）へ渡す検索結果・条件データをModelに追加
+        // View（HTML）へ渡す検索結果・条件データをModelに追加
         model.addAttribute("housePage", housePage);
         model.addAttribute("keyword", keyword);
         model.addAttribute("area", area);
         
-        return "houses/index"; // 13. 表示するHTMLテンプレート（houses/index.html）を返す
+        return "houses/index"; // 表示するHTMLテンプレート（houses/index.html）を返す
     }
 
-    /**
-     * 一般ユーザー向け 民宿詳細ページ表示（GET /houses/{id}）
-     */
-    @GetMapping("/{id}") // 14. GETリクエスト（/houses/{id}）を受け付ける
-    public String show(@PathVariable(name = "id") Integer id, Model model) { // 15. URLパスから民宿IDを取得
-        // 16. 指定されたIDのエンティティ参照を取得
+    // 一般ユーザー向け 民宿詳細ページ表示（GET /houses/{id}）
+    @GetMapping("/{id}") // GETリクエスト（/houses/{id}）を受け付ける
+    public String show(@PathVariable(name = "id") Integer id, Model model) { // URLパスから民宿IDを取得
+        // 指定されたIDのエンティティ参照を取得
         House house = houseRepository.getReferenceById(id);
         
-        // 17. 画面表示用データと、予約入力用のフォームオブジェクトをModelに追加
+        // 画面表示用データと、予約入力用のフォームオブジェクトをModelに追加
         model.addAttribute("house", house);
         model.addAttribute("reservationInputForm", new ReservationInputForm());
         
-        return "houses/show"; // 18. 表示するHTMLテンプレート（houses/show.html）を返す
+        return "houses/show"; // 表示するHTMLテンプレート（houses/show.html）を返す
     }
 }

@@ -1,42 +1,30 @@
-package com.example.moattravel.controller; // 1. このクラスが属するパッケージ（フォルダ構成）を指定
+package com.example.moattravel.controller; // 管理者のための予約管理コントローラー
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
-// Spring MVC（コントローラー・Web機能）関連のクラスをインポート
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.data.domain.Page; // ページごとにデータを分割して扱うための機能
+import org.springframework.data.domain.Pageable; // ページ番号や表示件数の情報を扱うための仕組み
+import org.springframework.data.web.PageableDefault; // ページの初期設定を行うための目印
+import org.springframework.stereotype.Controller; // このクラスがWebからの窓口であることを示す目印
+import org.springframework.ui.Model; // 画面にデータを渡すための箱
+import org.springframework.web.bind.annotation.GetMapping; // 画面を表示するためのリクエストを受け取る目印
+import org.springframework.web.bind.annotation.RequestMapping; // 共通のアドレスを設定する目印
 
-// アプリケーション内のEntity・Serviceをインポート
-import com.example.moattravel.entity.Reservation;
-import com.example.moattravel.service.ReservationService;
+import com.example.moattravel.entity.Reservation; // 予約のデータベース情報
+import com.example.moattravel.service.ReservationService; // 予約に関する様々な処理のルール
 
-
-@Controller // 2. Spring Bootに「このクラスはWebリクエストを処理するコントローラーです」と認識させる
-@RequestMapping("/admin/reservations") // 3. このクラス内のすべてのメソッドの基準URLを "/admin/reservations" に設定
-public class AdminReservationController {
-
-    // 4. 予約に関するビジネスロジック処理を行う依存サービス（フィールド）を宣言
-    private final ReservationService reservationService;
-
-    // 5. コンストラクタインジェクション（Springが自動で依存インスタンスを注入する）
-    public AdminReservationController(ReservationService reservationService) {
-        this.reservationService = reservationService;
+@Controller // このクラスがWebの画面やリクエストを制御する役割を持つことを伝える
+@RequestMapping("/admin/reservations") // この中にある処理はすべて「/admin/reservations」というアドレスから始まるようにする
+public class AdminReservationController { // 管理者用の予約管理をまとめたクラスの定義開始
+    private final ReservationService reservationService; // 予約の処理を行う仕組みを入れる変数を用意する
+    public AdminReservationController(ReservationService reservationService) { // 必要な仕組みを自動で受け取るためのコンストラクタ
+        this.reservationService = reservationService; // 受け取った予約処理の仕組みをクラス内で使えるようにセットする
     }
-
-    /**
-     * 管理者用 予約一覧ページ表示（GET /admin/reservations）
-     */
-    @GetMapping
-    public String index(@PageableDefault(page = 0, size = 10, sort = "id") Pageable pageable, Model model) {
-        // pageableを渡して Page<Reservation> を取得する
-    	Page<Reservation> reservationPage = reservationService.findAllReservations(pageable);
+    
+    @GetMapping // 「/admin/reservations」へのアクセスがあったときにこのメソッドを動かす
+    public String index(@PageableDefault(page = 0, size = 10, sort = "id") Pageable pageable, Model model) { // 一覧のページ設定と画面にデータを送る箱を受け取る
+        Page<Reservation> reservationPage = reservationService.findAllReservations(pageable); // ページごとに予約データを取得する
         
-        // HTML側で参照している変数名に合わせてモデルに追加
-        model.addAttribute("reservationPage", reservationPage);
+        model.addAttribute("reservationPage", reservationPage); // 取得した予約データを画面に渡す
         
-        return "admin/reservations/index";
+        return "admin/reservations/index"; // 予約一覧画面のファイルを表示するように指示する
     }
-}
+} 

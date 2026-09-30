@@ -1,30 +1,30 @@
-package com.example.moattravel.security; // 1. このクラスが属するパッケージ（セキュリティ関連）を指定
+package com.example.moattravel.security; //Spring Securityでのログイン認証時に、入力されたメールアドレスをもとにデータベースからユーザー情報を検索し、保有ロールを含む認証用オブジェクト（UserDetailsImpl）を生成して提供するためのサービスクラス。
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.ArrayList; // 可変長の配列リストを作成するためのクラス
+import java.util.Collection; // 権限リストなどを保持するためのCollectionインターフェースをインポート
 
 // Spring Securityが提供する権限管理・ユーザー検索用のクラスをインポート
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.stereotype.Service;
+import org.springframework.security.core.GrantedAuthority; // ユーザーに付与される権限を表すインターフェース
+import org.springframework.security.core.authority.SimpleGrantedAuthority; // 権限名を文字列から生成するためのクラス
+import org.springframework.security.core.userdetails.UserDetails; // Spring Securityが認証・認可で使用するユーザー情報を表すインターフェース
+import org.springframework.security.core.userdetails.UserDetailsService; // ログイン時のユーザー検索処理を行うためのインターフェース
+import org.springframework.security.core.userdetails.UsernameNotFoundException; // ユーザーが見つからなかった場合にスローされる例外クラス
+import org.springframework.stereotype.Service; // Springのサービス層のコンポーネントとしてDIコンテナに登録するためのアノテーション
 
-import com.example.moattravel.entity.User;
-import com.example.moattravel.repository.UserRepository;
+import com.example.moattravel.entity.User; // ユーザー情報を保持するエンティティクラス
+import com.example.moattravel.repository.UserRepository; // ユーザー情報のデータベース操作を行うリポジトリ
 
-@Service // 2. Springのコンポーネントスキャン対象（サービス層のBean）として登録
-public class UserDetailsServiceImple implements UserDetailsService { // 3. Spring Securityのユーザー検索インターフェースを実装
+@Service // Springのコンポーネントスキャン対象（サービス層のBean）として登録
+public class UserDetailsServiceImple implements UserDetailsService { // Spring Securityのユーザー検索インターフェースを実装
 
     private final UserRepository userRepository; // DI（依存性注入）用リポジトリ
 
-    // 4. コンストラクタインジェクション（UserRepositoryを受け取る）
+    // コンストラクタインジェクション（UserRepositoryを受け取る）
     public UserDetailsServiceImple(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
-    // 5. ログイン時に入力されたメールアドレス（＝ユーザー名）を基にユーザー情報を検索・返却する核心メソッド
+    // ログイン時に入力されたメールアドレス（＝ユーザー名）を基にユーザー情報を検索・返却する核心メソッド
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         try {

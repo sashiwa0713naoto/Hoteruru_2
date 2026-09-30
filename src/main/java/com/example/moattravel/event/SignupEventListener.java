@@ -1,39 +1,29 @@
-package com.example.moattravel.event;
+package com.example.moattravel.event; //新規会員登録イベント（SignupEvent）を受け取り、一意の認証トークンの生成・DB保存およびメール認証用のリンクを含んだ確認メールの送信を行うリスナークラス。
 
-import java.util.UUID;
+import java.util.UUID; // ランダムなユニークIDを生成するためのクラス
 
-import org.springframework.context.event.EventListener;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.stereotype.Component;
+import org.springframework.context.event.EventListener; // Springのイベントハンドラーメソッドであることを示すアノテーション
+import org.springframework.mail.SimpleMailMessage; // プレーンテキストのメールメッセージを構築するためのクラス
+import org.springframework.mail.javamail.JavaMailSender; // メールを送信するためのインターフェース
+import org.springframework.stereotype.Component; // SpringのコンポーネントとしてDIコンテナに登録するためのアノテーション
 
-import com.example.moattravel.entity.User;
-import com.example.moattravel.service.VerificationTokenService;
+import com.example.moattravel.entity.User; // ユーザー情報を保持するエンティティクラス
+import com.example.moattravel.service.VerificationTokenService; // 認証トークンのデータベース保存処理等を行うサービス
 
-/**
- * 会員登録イベント（SignupEvent）を受け取り、
- * 認証トークンの生成・保存および認証メールの送信を行うリスナークラス
- */
 @Component // SpringのコンポーネントとしてDIコンテナに登録
 public class SignupEventListener {
+    
     // 依存するサービスのフィールド定義（不変にするため final を付与）
     private final VerificationTokenService verificationTokenService;
     private final JavaMailSender javaMailSender;
 
-    /**
-     * コンストラクタ注入（DI）
-     * Springが自動的に必要なBean（ServiceやMailSender）を注入する
-     */
+    // コンストラクタ注入（DI）。Springが自動的に必要なBean（ServiceやMailSender）を注入する
     public SignupEventListener(VerificationTokenService verificationTokenService, JavaMailSender javaMailSender) {
         this.verificationTokenService = verificationTokenService;
         this.javaMailSender = javaMailSender;
     }
 
-    /**
-     * SignupEventが発生した際に自動的に呼び出されるイベントハンドラー
-     * 
-     * @param signupEvent 会員登録イベントオブジェクト（登録ユーザー情報やリクエストURLを保持）
-     */
+    // SignupEventが発生した際に自動的に呼び出されるイベントハンドラー。signupEventは会員登録イベントオブジェクト（登録ユーザー情報やリクエストURLを保持）
     @EventListener // イベント受領用アノテーション
     public void onSignupEvent(SignupEvent signupEvent) {
         // イベントオブジェクトから登録されたユーザー情報を取得
@@ -47,8 +37,8 @@ public class SignupEventListener {
         
         // 送信メールの基本情報設定
         String senderAddress = "springboot.samurai@example.com"; // 送信元メールアドレス
-        String recipientAddress = user.getEmail();             // 送信先（登録ユーザーのメールアドレス）
-        String subject = "メール認証";                           // 件名
+        String recipientAddress = user.getEmail(); // 送信先（登録ユーザーのメールアドレス）
+        String subject = "メール認証"; // 件名
         
         // 会員登録を完了するための認証用URLを作成（ドメイン名 + パス + 生成したトークン）
         String confirmationUrl = signupEvent.getRequestUrl() + "/signup/verify?token=" + token;

@@ -1,189 +1,111 @@
-package com.example.moattravel.service;
+package com.example.moattravel.service; // 会員情報の登録や更新、メール認証用トークンの生成や検証といった会員と認証に関する処理をまとめて行うサービスクラス。
 
-import org.springframework.security.crypto.password.PasswordEncoder; // パスワードの暗号化（ハッシュ化）を行うクラス
-import org.springframework.stereotype.Service; // サービスクラス（業務ロジック）であることをSpringに伝えるアノテーション
-import org.springframework.transaction.annotation.Transactional; // データベース処理の整合性を保つ（失敗時に自動ロールバック）アノテーション
+import org.springframework.security.crypto.password.PasswordEncoder; // パスワードを安全に暗号化するための仕組み
+import org.springframework.stereotype.Service; // Springにこのクラスがサービス層の部品であることを伝えるアノテーション
+import org.springframework.transaction.annotation.Transactional; // 処理途中でエラーが起きたらデータベースの変更を自動で元に戻す仕組み
 
-// データベースのテーブル（エンティティ）、画面から送られるフォームデータ、DB操作用リポジトリのインポート
-import com.example.moattravel.entity.Role;
-import com.example.moattravel.entity.User;
-import com.example.moattravel.entity.VerificationToken;
-import com.example.moattravel.form.SignupForm;
-import com.example.moattravel.form.UserEditForm;
-import com.example.moattravel.repository.RoleRepository;
-import com.example.moattravel.repository.UserRepository;
-import com.example.moattravel.repository.VerificationTokenRepository;
+import com.example.moattravel.entity.Role; // 権限データをデータベースのテーブルと対応付けるためのクラス
+import com.example.moattravel.entity.User; // ユーザーデータをデータベースのテーブルと対応付けるためのクラス
+import com.example.moattravel.entity.VerificationToken; // メール認証用のトークンデータをデータベースのテーブルと対応付けるためのクラス
+import com.example.moattravel.form.SignupForm; // 会員登録画面からの入力データを受け取るためのフォーム
+import com.example.moattravel.form.UserEditForm; // 会員情報編集画面からの入力データを受け取るためのフォーム
+import com.example.moattravel.repository.RoleRepository; // 権限データをデータベースから探すための仕組み
+import com.example.moattravel.repository.UserRepository; // ユーザーデータのデータベース操作を行う仕組み
+import com.example.moattravel.repository.VerificationTokenRepository; // メール認証用トークンのデータベース操作を行う仕組み
 
-/**
- * 会員情報およびメール認証トークンに関する各種業務ロジック（登録・更新・検証・削除）を管理するサービスクラス
- */
-@Service
-public class VerificationTokenService {
+@Service // このクラスをSpringの部品（サービス）として登録する
+public class VerificationTokenService { // 会員情報やメール認証トークンに関するさまざまな処理やデータベース操作をまとめて実行するクラス
 
-    // データベース操作や暗号化処理を行うための部品（依存コンポーネント）の宣言
-    private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final VerificationTokenRepository verificationTokenRepository;
+    private final UserRepository userRepository; // ユーザーデータをデータベースに保存・取得するための仕組み
+    private final RoleRepository roleRepository; // 権限データをデータベースから探すための仕組み
+    private final PasswordEncoder passwordEncoder; // パスワードを安全に暗号化するための仕組み
+    private final VerificationTokenRepository verificationTokenRepository; // メール認証用トークンのデータベース操作を行う仕組み
 
-    /**
-     * コンストラクタインジェクション
-     * 必要なリポジトリや暗号化モジュールをSpringが自動的に注入（セット）します。
-     */
     public VerificationTokenService(UserRepository userRepository, 
                                    RoleRepository roleRepository, 
                                    PasswordEncoder passwordEncoder,
-                                   VerificationTokenRepository verificationTokenRepository) {
+                                   VerificationTokenRepository verificationTokenRepository) { // 必要なデータベース操作や暗号化の仕組みをまとめて受け取るコンストラクタ
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.verificationTokenRepository = verificationTokenRepository;
     }
 
-    /**
-     * 【メール認証完了処理】
-     * ユーザーのアカウント有効化フラグ（enabled）を true に更新します。
-     * （ユーザーが本人のメールで認証リンクを押した時に実行されます）
-     * 
-     * @param user 有効化対象のユーザーエンティティ
-     */
-    @Transactional
-    public void enableUser(User user) {
-        user.setEnabled(true);
-        userRepository.save(user); // データベースの状態を更新
+    @Transactional // 処理の途中でエラーが発生した場合、データベースの変更をすべて自動で元に戻す
+    public void enableUser(User user) { // ユーザーのアカウントを有効な状態（ログインできる状態）にするメソッド
+        user.setEnabled(true); // アカウントを有効に設定する
+        userRepository.save(user); // 変更をデータベースに保存する
     }
 
-    /**
-     * 【新規会員の登録処理】
-     * 会員登録画面から送られたデータ（SignupForm）を受け取り、パスワードを安全に暗号化した上でDBに登録します。
-     * 
-     * @param signupForm ユーザーが入力した登録フォームデータ
-     * @return データベースに保存された User エンティティ
-     */
-    @Transactional
-    public User create(SignupForm signupForm) {
-        User user = new User();
-        // 一般ユーザー権限（ROLE_GENERAL）を取得して設定
-        Role role = roleRepository.findByName("ROLE_GENERAL");
+    @Transactional // 処理の途中でエラーが発生した場合、データベースの変更をすべて自動で元に戻す
+    public User create(SignupForm signupForm) { // 新しい会員のデータをデータベースに登録するメソッド
+        User user = new User(); // 新しいユーザーデータの入れ物を作る
+        Role role = roleRepository.findByName("ROLE_GENERAL"); // 一般ユーザー向けの権限データを取得する
 
-        // フォームからの入力をユーザーオブジェクトにセット
-        user.setName(signupForm.getName());
-        user.setFurigana(signupForm.getFurigana());
-        user.setPostalCode(signupForm.getPostalCode());
-        user.setAddress(signupForm.getAddress());
-        user.setPhoneNumber(signupForm.getPhoneNumber());
-        user.setEmail(signupForm.getEmail());
+        user.setName(signupForm.getName()); // フォームから受け取った氏名をセットする
+        user.setFurigana(signupForm.getFurigana()); // フォームから受け取ったフリガナをセットする
+        user.setPostalCode(signupForm.getPostalCode()); // フォームから受け取った郵便番号をセットする
+        user.setAddress(signupForm.getAddress()); // フォームから受け取った住所をセットする
+        user.setPhoneNumber(signupForm.getPhoneNumber()); // フォームから受け取った電話番号をセットする
+        user.setEmail(signupForm.getEmail()); // フォームから受け取ったメールアドレスをセットする
 
-        // 生パスワードを暗号化（BCrypt等）して安全に保存
-        user.setPassword(passwordEncoder.encode(signupForm.getPassword()));
-        user.setRole(role);
-        user.setEnabled(true); // 初期状態でアカウントを有効化
+        user.setPassword(passwordEncoder.encode(signupForm.getPassword())); // パスワードを安全に暗号化してセットする
+        user.setRole(role); // 取得した一般権限をセットする
+        user.setEnabled(true); // アカウントを使える状態に設定する
 
-        return userRepository.save(user); // DBへ挿入
+        return userRepository.save(user); // 作成したユーザーデータをデータベースに保存して返す
     }
 
-    /**
-     * 【メールアドレスの重複チェック】
-     * 入力されたメールアドレスがすでに登録済みかどうかを確認します。
-     * 
-     * @param email チェック対象のメールアドレス
-     * @return すでに登録済みの場合は true、未登録の場合は false
-     */
-    public boolean isEmailRegistered(String email) {
-        User user = userRepository.findByEmail(email);
-        return user != null;
+    public boolean isEmailRegistered(String email) { // 入力されたメールアドレスがすでに登録されているかどうかを調べるメソッド
+        User user = userRepository.findByEmail(email); // メールアドレスをもとにユーザーを探す
+        return user != null; // ユーザーが見つかった場合はすでに登録されている（true）と判定する
     }
 
-    /**
-     * 【パスワード一致チェック】
-     * 会員登録時などに入力された「パスワード」と「確認用パスワード」が合致しているか判定します。
-     * 
-     * @param password 入力されたパスワード
-     * @param passwordConfirmation 確認用の入力パスワード
-     * @return 一致していれば true
-     */
-    public boolean isSamePassword(String password, String passwordConfirmation) {
-        return password.equals(passwordConfirmation);
+    public boolean isSamePassword(String password, String passwordConfirmation) { // 入力されたパスワードと確認用パスワードが一致しているかを調べるメソッド
+        return password.equals(passwordConfirmation); // 2つのパスワードが同じであればtrueを返す
     }
 
-    /**
-     * 【会員情報の更新処理】
-     * ユーザーのプロフィール編集画面から送信されたデータをもとに、DB上の会員情報を更新します。
-     * 
-     * @param userEditForm 編集後のフォームデータ
-     */
-    @Transactional
-    public void update(UserEditForm userEditForm) {
-        // IDをもとに既存のユーザー情報を読み込み（参照プロキシを取得）
-        User user = userRepository.getReferenceById(userEditForm.getId());
+    @Transactional // 処理の途中でエラーが発生した場合、データベースの変更をすべて自動で元に戻す
+    public void update(UserEditForm userEditForm) { // 会員の情報を更新するメソッド
+        User user = userRepository.getReferenceById(userEditForm.getId()); // 更新対象のユーザーデータを効率よく取得する
 
-        user.setName(userEditForm.getName());
-        user.setFurigana(userEditForm.getFurigana());
-        user.setPostalCode(userEditForm.getPostalCode());
-        user.setAddress(userEditForm.getAddress());
-        user.setPhoneNumber(userEditForm.getPhoneNumber());
-        user.setEmail(userEditForm.getEmail());
+        user.setName(userEditForm.getName()); // 新しい氏名をセットする
+        user.setFurigana(userEditForm.getFurigana()); // 新しいフリガナをセットする
+        user.setPostalCode(userEditForm.getPostalCode()); // 新しい郵便番号をセットする
+        user.setAddress(userEditForm.getAddress()); // 新しい住所をセットする
+        user.setPhoneNumber(userEditForm.getPhoneNumber()); // 新しい電話番号をセットする
+        user.setEmail(userEditForm.getEmail()); // 新しいメールアドレスをセットする
 
-        userRepository.save(user); // 更新内容を保存
+        userRepository.save(user); // 変更をデータベースに保存して更新する
     }
 
-    /**
-     * 【メールアドレスの変更有無判定】
-     * プロフィール更新時に、以前のメールアドレスから変更があったかを検証します。
-     * 
-     * @param userEditForm 編集用フォームデータ
-     * @return 変更されている場合 true
-     */
-    public boolean isEmailChanged(UserEditForm userEditForm) {
-        User currentUser = userRepository.getReferenceById(userEditForm.getId());
-        return !userEditForm.getEmail().equals(currentUser.getEmail());
+    public boolean isEmailChanged(UserEditForm userEditForm) { // 会員情報の変更時に、メールアドレスがこれまでと変わったかどうかを判定するメソッド
+        User currentUser = userRepository.getReferenceById(userEditForm.getId()); // 現在データベースに保存されているユーザー情報を取得する
+        return !userEditForm.getEmail().equals(currentUser.getEmail()); // 入力されたメールアドレスが元のものと異なっていればtrueを返す
     }
 
-    /**
-     * 【会員アカウント削除処理】
-     * ユーザーを削除する際、外部キー制約（エラー）を避けるために
-     * 先に関連する認証用トークン（VerificationToken）を削除してから、ユーザー本体を削除します。
-     * 
-     * @param id 削除対象のユーザーID
-     */
-    @Transactional
-    public void deleteUser(Integer id) {
-        User user = userRepository.findById(id).orElse(null);
-        if (user != null) {
-            // ユーザーに紐づくトークンが存在する場合は先に削除
-            VerificationToken verificationToken = verificationTokenRepository.findByUser(user);
-            if (verificationToken != null) {
-                verificationTokenRepository.delete(verificationToken);
+    @Transactional // 処理の途中でエラーが発生した場合、データベースの変更をすべて自動で元に戻す
+    public void deleteUser(Integer id) { // 会員データを削除するメソッド（関連する認証トークンもあわせて削除する）
+        User user = userRepository.findById(id).orElse(null); // 削除するユーザーをIDで探す
+        if (user != null) { // ユーザーが見つかった場合
+            VerificationToken verificationToken = verificationTokenRepository.findByUser(user); // ユーザーに紐づくメール認証トークンを探す
+            if (verificationToken != null) { // トークンが存在する場合
+                verificationTokenRepository.delete(verificationToken); // 先に認証トークンを削除する
             }
-            // ユーザー本体を削除
-            userRepository.delete(user);
+            userRepository.delete(user); // ユーザー本体のデータを削除する
         }
     }
 
-    /**
-     * 【トークン情報の検索】
-     * メール内のURLに含まれるトークン文字列（例: ?token=xxxx）から、DB内のトークン情報を取得します。
-     * 
-     * @param token トークン文字列
-     * @return DBに保存されている VerificationToken オブジェクト
-     */
-    public VerificationToken getVerificationToken(String token) {
-        return verificationTokenRepository.findByToken(token);
+    public VerificationToken getVerificationToken(String token) { // メール内のURLに含まれるトークン文字列をもとに、データベースから認証トークン情報を取得するメソッド
+        return verificationTokenRepository.findByToken(token); // トークン文字列から該当するデータを探して返す
     }
 
-    /**
-     * 【メール認証トークンの新規生成＆保存】
-     * 会員登録時、ユーザーとランダム発行されたトークン文字列（UUID等）を紐づけてDBに保存します。
-     * 
-     * @param user 対象となるユーザー
-     * @param token ランダム生成された認証トークン文字列
-     */
-    @Transactional
-    public void create(User user, String token) {
-        VerificationToken verificationToken = new VerificationToken();
-        verificationToken.setUser(user);   // 対象ユーザーを紐づけ
-        verificationToken.setToken(token); // トークン文字列を紐づけ
+    @Transactional // 処理の途中でエラーが発生した場合、データベースの変更をすべて自動で元に戻す
+    public void create(User user, String token) { // 新規会員登録時に発行された認証トークンをユーザーと紐づけてデータベースに保存するメソッド
+        VerificationToken verificationToken = new VerificationToken(); // 新しい認証トークンデータの入れ物を作る
+        verificationToken.setUser(user); // 対象のユーザーを紐づける
+        verificationToken.setToken(token); // ランダムなトークン文字列を紐づける
 
-        verificationTokenRepository.save(verificationToken); // トークンテーブルに保存
+        verificationTokenRepository.save(verificationToken); // トークンデータをデータベースに保存する
     }
 }

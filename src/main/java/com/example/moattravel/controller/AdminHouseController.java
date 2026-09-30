@@ -1,181 +1,145 @@
-package com.example.moattravel.controller; // 1. このクラスが属するパッケージ（フォルダ構成）を指定
+package com.example.moattravel.controller; // 管理者のための民宿管理コントローラー
 
-// Spring Data Pageable（ページネーション機能）関連のクラスをインポート
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
-// Spring MVC（コントローラー・Web機能）関連のクラスをインポート
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.data.domain.Page; // ページごとにデータを分割して扱うための機能を読み込む
+import org.springframework.data.domain.Pageable; // ページ番号や表示件数の情報を扱うための仕組みを読み込む
+import org.springframework.data.web.PageableDefault; // ページの初期設定を行うための目印を読み込む
+import org.springframework.stereotype.Controller; // このクラスがWebからの窓口であることを示す目印を読み込む
+import org.springframework.ui.Model; // 画面にデータを渡すための箱を読み込む
+import org.springframework.validation.BindingResult; // 入力内容に間違いがないかチェックした結果を受け取る仕組みを読み込む
+import org.springframework.validation.annotation.Validated; // 入力チェックの実行を指示する目印を読み込む
+import org.springframework.web.bind.annotation.GetMapping; // 画面を表示するためのリクエストを受け取る目印を読み込む
+import org.springframework.web.bind.annotation.ModelAttribute; // 送られてきたフォームのデータをオブジェクトにまとめる目印を読み込む
+import org.springframework.web.bind.annotation.PathVariable; // アドレスの一部にある番号などを受け取る目印を読み込む
+import org.springframework.web.bind.annotation.PostMapping; // データを保存・更新するためのリクエストを受け取る目印を読み込む
+import org.springframework.web.bind.annotation.RequestMapping; // 共通のアドレスを設定する目印を読み込む
+import org.springframework.web.bind.annotation.RequestParam; // アドレスの後ろにつくパラメータを受け取る目印を読み込む
+import org.springframework.web.servlet.mvc.support.RedirectAttributes; // 別の画面に一時的なメッセージを渡す仕組みを読み込む
 
-// アプリケーション内のEntity・Form・Repository・Serviceをインポート
-import com.example.moattravel.entity.House;
-import com.example.moattravel.form.HouseEditForm;
-import com.example.moattravel.form.HouseRegisterForm;
-import com.example.moattravel.repository.HouseRepository;
-import com.example.moattravel.service.HouseService;
+import com.example.moattravel.entity.House; // 民宿のデータベース情報を表す仕組みを読み込む
+import com.example.moattravel.form.HouseEditForm; // 民宿編集時の入力内容を一時的に保管する仕組みを読み込む
+import com.example.moattravel.form.HouseRegisterForm; // 民宿登録時の入力内容を一時的に保管する仕組みを読み込む
+import com.example.moattravel.repository.HouseRepository; // 民宿のデータをデータベースから探したり保存したりする仕組みを読み込む
+import com.example.moattravel.service.HouseService; // 民宿に関する様々な処理のルールが集まった仕組みを読み込む
 
-@Controller // 2. Spring Bootに「このクラスはWebリクエストを処理するコントローラーです」と認識させる
-@RequestMapping("/admin/houses") // 3. このクラス内のすべてのメソッドの基準URLを "/admin/houses" に設定
-public class AdminHouseController {
-    // 4. データベース操作およびビジネスロジックを行う依存クラス（フィールド）を宣言
-    private final HouseRepository houseRepository;
-    private final HouseService houseService;
+@Controller // このクラスがWebの画面やリクエストを制御する役割を持つことを伝える
+@RequestMapping("/admin/houses") // この中にある処理はすべて「/admin/houses」というアドレスから始まるようにする
+public class AdminHouseController { // 管理者用の民宿管理をまとめたクラスの定義開始
 
-    // 5. コンストラクタインジェクション（Springが自動で依存関係を注入する）
-    public AdminHouseController(HouseRepository houseRepository, HouseService houseService) {
-        this.houseRepository = houseRepository;
-        this.houseService = houseService;
+    private final HouseRepository houseRepository; // データベース操作を行う仕組みを入れる変数を用意する
+    private final HouseService houseService; // 民宿の処理を行う仕組みを入れる変数を用意する
+
+    public AdminHouseController(HouseRepository houseRepository, HouseService houseService) { // 必要な仕組みを自動で受け取るためのコンストラクタ
+        this.houseRepository = houseRepository; // 受け取ったデータベース操作の仕組みをクラス内で使えるようにセットする
+        this.houseService = houseService; // 受け取った民宿処理の仕組みをクラス内で使えるようにセットする
     }
 
-    /**
-     * 民宿一覧ページ表示・検索処理（GET /admin/houses）
-     */
-    @GetMapping // 6. GETリクエスト（/admin/houses）を受け付ける
-    public String index(Model model, 
-                         @PageableDefault(page = 0, size = 10) Pageable pageable, // 7. ページネーション設定（デフォルト1ページ10件）
-                         @RequestParam(name = "keyword", required = false) String keyword) { // 8. URLの検索クエリ(?keyword=...)を受け取る
-        Page<House> housePage;
+    @GetMapping // 「/admin/houses」へのアクセス（画面表示の依頼）があったときにこのメソッドを動かす
+    public String index(Model model,  // 画面にデータを送るための箱を受け取る
+                         @PageableDefault(page = 0, size = 10) Pageable pageable, // 一覧のページ番号と1ページあたりの表示件数を指定する
+                         @RequestParam(name = "keyword", required = false) String keyword) { // 検索キーワードが指定されていれば受け取る
+        Page<House> housePage; // ページ分割された民宿のデータを保存する変数を用意する
         
-        // 9. 検索キーワードの有無で処理を分岐
-        if (keyword != null && !keyword.isEmpty()) {
-            // キーワードがある場合：名前・郵便番号・住所・電話番号で部分一致検索（曖昧検索）
-            housePage = houseRepository.findByNameLikeOrPostalCodeLikeOrAddressLikeOrPhoneNumberLike(
-                "%" + keyword + "%", 
-                "%" + keyword + "%", 
-                "%" + keyword + "%", 
-                "%" + keyword + "%", 
-                pageable
+        if (keyword != null && !keyword.isEmpty()) { // 検索の言葉が空ではない場合
+            housePage = houseRepository.findByNameLikeOrPostalCodeLikeOrAddressLikeOrPhoneNumberLike( // キーワードに似ているデータをデータベースから探す
+                "%" + keyword + "%",  // 名前から探すための条件を指定する
+                "%" + keyword + "%",  // 郵便番号から探すための条件を指定する
+                "%" + keyword + "%",  // 住所から探すための条件を指定する
+                "%" + keyword + "%",  // 電話番号から探すための条件を指定する
+                pageable // ページ分割のルールを渡す
             );
-        } else {
-            // キーワードがない場合：全件取得（ページネーション適用）
-            housePage = houseRepository.findAll(pageable);
+        } else { // 検索の言葉がない場合
+            housePage = houseRepository.findAll(pageable); // すべてのデータをページごとに取得する
         }
 
-        // 10. View（HTML）へ渡すデータをModelに登録
-        model.addAttribute("housePage", housePage);
-        model.addAttribute("keyword", keyword);
+        model.addAttribute("housePage", housePage); // 取得したデータのページ情報を画面に渡す
+        model.addAttribute("keyword", keyword); // 検索に使った言葉を画面に渡す
 
-        return "admin/houses/index"; // 11. 表示するHTMLテンプレート（admin/houses/index.html）を返す
+        return "admin/houses/index"; // 民宿一覧画面のファイルを表示するように指示する
     }
 
-    /**
-     * 民宿詳細ページ表示（GET /admin/houses/{id}）
-     */
-    @GetMapping("/{id}") // 12. GETリクエスト（/admin/houses/{id}）を受け付ける
-    public String show(@PathVariable(name = "id") Integer id, Model model) { // 13. URLパスからIDを取得
-        House house = houseRepository.findById(id).orElse(null); // 14. 指定されたIDの民宿を取得（存在しない場合はnull）
+    @GetMapping("/{id}") // 「/admin/houses/数字」というアクセスがあったときにこのメソッドを動かす
+    public String show(@PathVariable(name = "id") Integer id, Model model) { // アドレスに含まれる番号と画面にデータを送る箱を受け取る
+        House house = houseRepository.findById(id).orElse(null); // 指定された番号の民宿データをデータベースから探して取得する
         
-        if (house == null) {
-            return "redirect:/admin/houses"; // 15. 民宿が存在しない場合は一覧ページへリダイレクト
+        if (house == null) { // 指定された番号の民宿データが見つからなかった場合
+            return "redirect:/admin/houses"; // 一覧画面へ強制的に移動させる
         }
         
-        model.addAttribute("house", house); // HTMLへ表示対象の民宿データを渡す
+        model.addAttribute("house", house); // 見つかった民宿データを画面に渡す
 
-        return "admin/houses/show"; // admin/houses/show.html を表示
+        return "admin/houses/show"; // 民宿詳細画面のファイルを表示するように指示する
     }
 
-    /**
-     * 民宿登録画面表示（GET /admin/houses/register）
-     */
-    @GetMapping("/register")
-    public String register(Model model) {
-        // 16. フォーム用の空オブジェクトをModelにセットして登録画面を表示
-        model.addAttribute("houseRegisterForm", new HouseRegisterForm());
-        return "admin/houses/register";
+    @GetMapping("/register") // 「/admin/houses/register」へのアクセスがあったときにこのメソッドを動かす
+    public String register(Model model) { // 画面にデータを送るための箱を受け取る
+        model.addAttribute("houseRegisterForm", new HouseRegisterForm()); // 新規登録用の空っぽの箱を用意して画面に渡す
+        return "admin/houses/register"; // 民宿登録画面のファイルを表示するように指示する
     }
 
-    /**
-     * 民宿新規登録処理（POST /admin/houses/create）
-     */
-    @PostMapping("/create") // 17. POSTリクエスト（/admin/houses/create）を受け付ける
-    public String create(@ModelAttribute @Validated HouseRegisterForm houseRegisterForm, // 18. フォームデータ取得と入力チェック（バリデーション）
-                         BindingResult bindingResult, // 19. 入力エラー結果を受け取る
-                         RedirectAttributes redirectAttributes, // 20. リダイレクト先にフラッシュメッセージ（1回限りの通知）を渡す
-                         Model model) {
+    @PostMapping("/create") // 「/admin/houses/create」へのデータの送信があったときにこのメソッドを動かす
+    public String create(@ModelAttribute @Validated HouseRegisterForm houseRegisterForm,  // 送られてきた入力データをチェックして受け取る
+                         BindingResult bindingResult,  // 入力チェックでエラーがなかったかどうかの結果を受け取る
+                         RedirectAttributes redirectAttributes,  // 移動先の画面にメッセージを渡すための仕組みを受け取る
+                         Model model) { // 画面にデータを送るための箱を受け取る
         
-        // 21. 入力エラーがある場合は登録画面へ戻る
-        if (bindingResult.hasErrors()) {
-            return "admin/houses/register";
+        if (bindingResult.hasErrors()) { // 入力内容に間違いや空欄などのエラーがある場合
+            return "admin/houses/register"; // 登録画面に戻す
         }
 
-        // 22. 登録処理の実行と成功メッセージの設定
-        houseService.create(houseRegisterForm);
-        redirectAttributes.addFlashAttribute("successMessage", "民宿を登録しました。");
+        houseService.create(houseRegisterForm); // 新しい民宿データを登録する処理を実行する
+        redirectAttributes.addFlashAttribute("successMessage", "民宿を登録しました。"); // 登録成功のメッセージを一時保存する
 
-        return "redirect:/admin/houses"; // 登録成功後は一覧ページへリダイレクト
+        return "redirect:/admin/houses"; // 登録が終わったら一覧画面に移動する
     }
 
-    /**
-     * 民宿編集画面表示（GET /admin/houses/{id}/edit）
-     */
-    @GetMapping("/{id}/edit")
-    public String edit(@PathVariable(name = "id") Integer id, Model model) {
-        House house = houseRepository.findById(id).orElse(null);
-        if (house == null) {
-            return "redirect:/admin/houses";
+    @GetMapping("/{id}/edit") // 「/admin/houses/数字/edit」へのアクセスがあったときにこのメソッドを動かす
+    public String edit(@PathVariable(name = "id") Integer id, Model model) { // アドレスに含まれる番号と画面にデータを送る箱を受け取る
+        House house = houseRepository.findById(id).orElse(null); // 編集する対象の民宿データをデータベースから探す
+        if (house == null) { // 対象の民宿データが見つからなかった場合
+            return "redirect:/admin/houses"; // 一覧画面へ強制的に移動させる
         }
 
-        // 23. DBから取得したEntityの情報を編集用Formオブジェクトに移し替える
-        HouseEditForm houseEditForm = new HouseEditForm(
-            house.getId(), 
-            house.getName(), 
-            house.getImageName(), 
-            null, // 新しい画像ファイル入力用に初期値nullを設定
-            house.getDescription(), 
-            house.getPrice(), 
-            house.getCapacity(), 
-            house.getPostalCode(), 
-            house.getAddress(), 
-            house.getPhoneNumber()
+        HouseEditForm houseEditForm = new HouseEditForm( // データベースから取得したデータを編集用の箱に移し替える
+            house.getId(),  // 民宿の番号
+            house.getName(),  // 民宿の名前
+            house.getImageName(),  // 画像の名前
+            null,  // 新しい画像ファイル用の初期値
+            house.getDescription(),  // 説明文
+            house.getPrice(),  // 宿泊料金
+            house.getCapacity(),  // 定員
+            house.getPostalCode(),  // 郵便番号
+            house.getAddress(),  // 住所
+            house.getPhoneNumber() // 電話番号
         );
         
-        model.addAttribute("houseEditForm", houseEditForm);
+        model.addAttribute("houseEditForm", houseEditForm); // 編集用のデータを画面に渡す
 
-        return "admin/houses/edit";
+        return "admin/houses/edit"; // 民宿編集画面のファイルを表示するように指示する
     }
 
-    /**
-     * 民宿更新処理（POST /admin/houses/{id}/update）
-     */
-    @PostMapping("/{id}/update")
-    public String update(@PathVariable(name = "id") Integer id, 
-                         @ModelAttribute @Validated HouseEditForm houseEditForm, 
-                         BindingResult bindingResult, 
-                         RedirectAttributes redirectAttributes, 
-                         Model model) {
+    @PostMapping("/{id}/update") // 「/admin/houses/数字/update」へのデータの送信があったときにこのメソッドを動かす
+    public String update(@PathVariable(name = "id") Integer id,  // アドレスに含まれる番号を受け取る
+                         @ModelAttribute @Validated HouseEditForm houseEditForm,  // 編集された入力データをチェックして受け取る
+                         BindingResult bindingResult,  // 入力チェックの結果を受け取る
+                         RedirectAttributes redirectAttributes,  // 移動先の画面にメッセージを渡す仕組みを受け取る
+                         Model model) { // 画面にデータを送るための箱を受け取る
         
-        // 入力エラーがある場合は編集画面へ戻る
-        if (bindingResult.hasErrors()) {
-            return "admin/houses/edit";
+        if (bindingResult.hasErrors()) { // 入力内容にエラーがある場合
+            return "admin/houses/edit"; // 編集画面に戻す
         }
 
-        // 24. 更新処理の実行と成功メッセージの設定
-        houseService.update(houseEditForm);
-        redirectAttributes.addFlashAttribute("successMessage", "民宿情報を編集しました。");
+        houseService.update(houseEditForm); // 民宿データの更新処理を実行する
+        redirectAttributes.addFlashAttribute("successMessage", "民宿情報を編集しました。"); // 更新成功のメッセージを一時保存する
 
-        return "redirect:/admin/houses";
+        return "redirect:/admin/houses"; // 更新が終わったら一覧画面に移動する
     }
 
-    /**
-     * 民宿削除処理（POST /admin/houses/{id}/delete）
-     */
-    @PostMapping("/{id}/delete")
-    public String delete(@PathVariable(name = "id") Integer id, RedirectAttributes redirectAttributes) {
-        // 25. IDを指定してデータベースから削除
-        houseRepository.deleteById(id);
+    @PostMapping("/{id}/delete") // 「/admin/houses/数字/delete」へのデータの送信があったときにこのメソッドを動かす
+    public String delete(@PathVariable(name = "id") Integer id, RedirectAttributes redirectAttributes) { // アドレスに含まれる番号とメッセージを渡す仕組みを受け取る
+        houseRepository.deleteById(id); // 指定された番号の民宿データをデータベースから削除する
         
-        redirectAttributes.addFlashAttribute("successMessage", "民宿を削除しました。");
+        redirectAttributes.addFlashAttribute("successMessage", "民宿を削除しました。"); // 削除成功のメッセージを一時保存する
 
-        return "redirect:/admin/houses";
+        return "redirect:/admin/houses"; // 削除が終わったら一覧画面に移動する
     }
 }

@@ -71,12 +71,7 @@
                                   th:action : 予約登録URLヘPOST送信（URLパス変数に house.id をセット）
                                   th:object : フォームデータをControllerへ送信するため同じオブジェクトバインドを指定
                                 -->
-                                <form th:action="@{/houses/{id}/reservations/create(id=${house.id})}" method="post" th:object="${reservationRegisterForm}" class="w-100">
-                                    <!-- 
-                                      【隠しフィールド (hidden)】
-                                      確認画面で表示した各種予約パラメータ（ID、日付、人数、料金）を
-                                      次の処理（決済・DB登録）へPOSTパラメータとして安全に引き継ぐ
-                                    -->
+                               <form th:action="@{/houses/{id}/reservations/create(id=${house.id})}" method="post" th:object="${reservationRegisterForm}" class="w-100">
                                     <input type="hidden" th:field="*{houseId}" />
                                     <input type="hidden" th:field="*{userId}" />
                                     <input type="hidden" th:field="*{checkinDate}" />

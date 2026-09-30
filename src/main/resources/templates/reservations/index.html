@@ -42,9 +42,7 @@
                                 </thead>
                                 <tbody>
 									<tr th:each="reservation : ${reservationPage}">
-										 <td th:text="${reservation.id}"></td>
-									    <td th:text="${reservation.house.name}"></td>
-                                        </td>
+									    <td th:text="${reservation.house.name}"></td>        
                                         <td th:text="${reservation.checkinDate}"></td>
                                         <td th:text="${reservation.checkoutDate}"></td>
                                         <td th:text="${#numbers.formatInteger(reservation.amount, 1, 'COMMA') + '円'}"></td>
