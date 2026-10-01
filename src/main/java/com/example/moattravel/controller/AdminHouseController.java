@@ -78,7 +78,7 @@ public class AdminHouseController { // 管理者用の民宿管理をまとめ�
 
     @PostMapping("/create") // 「/admin/houses/create」へのデータの送信があったときにこのメソッドを動かす
     public String create(@ModelAttribute @Validated HouseRegisterForm houseRegisterForm,  // 送られてきた入力データをチェックして受け取る
-                         BindingResult bindingResult,  // 入力チェックでエラーがなかったかどうかの結果を受け取る
+                         BindingResult bindingResult,  // 入力チェックでエラーがなかったかどうかの結果を受け取る(bindingResultはバリデーションの結果やデータバインディングのエラーを保持)
                          RedirectAttributes redirectAttributes,  // 移動先の画面にメッセージを渡すための仕組みを受け取る
                          Model model) { // 画面にデータを送るための箱を受け取る
         
@@ -124,7 +124,7 @@ public class AdminHouseController { // 管理者用の民宿管理をまとめ�
                          RedirectAttributes redirectAttributes,  // 移動先の画面にメッセージを渡す仕組みを受け取る
                          Model model) { // 画面にデータを送るための箱を受け取る
         
-        if (bindingResult.hasErrors()) { // 入力内容にエラーがある場合
+        if (bindingResult.hasErrors()) { // 入力内容にエラーがある場合(bindingResultはバリデーションの結果やデータバインディングのエラーを保持)
             return "admin/houses/edit"; // 編集画面に戻す
         }
 

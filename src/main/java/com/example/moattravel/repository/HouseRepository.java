@@ -1,60 +1,74 @@
-package com.example.moattravel.repository; //データベースのhousesテーブルに対するデータ操作（CRUD操作、キーワード検索、都道府県・エリアごとの複数条件によるJPQL検索、ページネーション対応）を行うリポジトリインターフェース。
+package com.example.moattravel.repository; // データベースから民宿のデータを検索・取得する機能（リポジトリ）をまとめる場所
 
-// Spring Data JPA（ページネーション・JPQLクエリ・リポジトリ）のクラスをインポート
-import org.springframework.data.domain.Page; // ページネーション結果（データ一覧や総ページ数など）を保持するクラス
-import org.springframework.data.domain.Pageable; // ページ番号や1ページあたりの表示件数、ソート順を指示するためのインターフェース
-import org.springframework.data.jpa.repository.JpaRepository; // 基本的なCRUD操作やページング機能を提供するSpring Data JPAのベースインターフェース
-import org.springframework.data.jpa.repository.Query; // 独自のJPQLクエリを定義するためのアノテーション
-import org.springframework.data.repository.query.Param; // JPQL内の名前付きパラメータに引数をバインドするためのアノテーション
+import org.springframework.data.domain.Page; // ページごとにデータを分割する機能
+import org.springframework.data.domain.Pageable; // ページ番号や表示件数を受け取る機能
+import org.springframework.data.jpa.repository.JpaRepository; // 基本的なデータベース操作を自動で行う機能
+import org.springframework.data.jpa.repository.Query; // 独自のクエリを記述する機能
+import org.springframework.data.repository.query.Param; // クエリの変数に値を安全に渡す機能
 
-import com.example.moattravel.entity.House; // 民宿情報を保持するエンティティクラス
+import com.example.moattravel.entity.House; // 民宿のデータベース情報を表すクラス
 
-public interface HouseRepository extends JpaRepository<House, Integer> { // Houseエンティティ（主キーInteger）に対するDB操作インターフェース
+// 民宿データのデータベース操作（検索や取得）をまとめたインターフェース
+public interface HouseRepository extends JpaRepository<House, Integer> { // 民宿データを操作する仕組みを定義する
     
-    // キーワード検索（民宿名・郵便番号・住所・電話番号のいずれかにマッチ＋ページネーション対応）
+    // 民宿名または住所によるキーワード検索を行う
+    Page<House> findByNameLikeOrAddressLike(String nameKeyword, String addressKeyword, Pageable pageable);
+
+    // 民宿名・郵便番号・住所・電話番号のすべてを対象にキーワード検索を行う
     Page<House> findByNameLikeOrPostalCodeLikeOrAddressLikeOrPhoneNumberLike(
-        String nameKeyword, 
-        String postalCodeKeyword, 
-        String addressKeyword, 
-        String phoneNumberKeyword, 
-        Pageable pageable
+        String nameKeyword, // 民宿名のキーワードを受け取る
+        String postalCodeKeyword, // 郵便番号のキーワードを受け取る
+        String addressKeyword, // 住所のキーワードを受け取る
+        String phoneNumberKeyword, // 電話番号のキーワードを受け取る
+        Pageable pageable // ページ設定を受け取る
     );
 
-    // 単一のエリア・都道府県検索（住所の部分一致＋ページネーション対応）
+    // 住所の部分一致でエリア・都道府県検索を行う
     Page<House> findByAddressLike(String addressKeyword, Pageable pageable);
 
-    // ▼ エリア（地方）ごとの複数都道府県を一括検索するカスタムJPQLクエリ
+    // 指定した価格以下の民宿を抽出する
+    Page<House> findByPriceLessThanEqual(Integer price, Pageable pageable);
 
-    // 北海道・東北地方（7道県：北海道・青森・岩手・宮城・秋田・山形・福島）の検索
+    // 新着順（作成日時の降順）で民宿を取得する
+    Page<House> findAllByOrderByCreatedAtDesc(Pageable pageable);
+
+    // エリア（地方）ごとに複数の都道府県を一括で検索するクエリ群
+
+    // 北海道・東北エリアの都道府県を一括検索する
     @Query("SELECT h FROM House h WHERE h.address LIKE :a1 OR h.address LIKE :a2 OR h.address LIKE :a3 OR h.address LIKE :a4 OR h.address LIKE :a5 OR h.address LIKE :a6 OR h.address LIKE :a7")
     Page<House> findByHokkaidoTohoku(@Param("a1") String a1, @Param("a2") String a2, @Param("a3") String a3, @Param("a4") String a4, @Param("a5") String a5, @Param("a6") String a6, @Param("a7") String a7, Pageable pageable);
 
-    // 関東地方（7都県：茨城・栃木・群馬・埼玉・千葉・東京・神奈川）の検索
+    // 関東エリアの都道府県を一括検索する
     @Query("SELECT h FROM House h WHERE h.address LIKE :a1 OR h.address LIKE :a2 OR h.address LIKE :a3 OR h.address LIKE :a4 OR h.address LIKE :a5 OR h.address LIKE :a6 OR h.address LIKE :a7")
     Page<House> findByKanto(@Param("a1") String a1, @Param("a2") String a2, @Param("a3") String a3, @Param("a4") String a4, @Param("a5") String a5, @Param("a6") String a6, @Param("a7") String a7, Pageable pageable);
 
-    // 中部地方（9県：新潟・富山・石川・福井・山梨・長野・岐阜・静岡・愛知）の検索
+    // 中部エリアの都道府県を一括検索する
     @Query("SELECT h FROM House h WHERE h.address LIKE :a1 OR h.address LIKE :a2 OR h.address LIKE :a3 OR h.address LIKE :a4 OR h.address LIKE :a5 OR h.address LIKE :a6 OR h.address LIKE :a7 OR h.address LIKE :a8 OR h.address LIKE :a9")
     Page<House> findByChubu(@Param("a1") String a1, @Param("a2") String a2, @Param("a3") String a3, @Param("a4") String a4, @Param("a5") String a5, @Param("a6") String a6, @Param("a7") String a7, @Param("a8") String a8, @Param("a9") String a9, Pageable pageable);
 
-    // 近畿地方（7府県：三重・滋賀・京都・大阪・兵庫・奈良・和歌山）の検索
+    // 近畿エリアの都道府県を一括検索する
     @Query("SELECT h FROM House h WHERE h.address LIKE :a1 OR h.address LIKE :a2 OR h.address LIKE :a3 OR h.address LIKE :a4 OR h.address LIKE :a5 OR h.address LIKE :a6 OR h.address LIKE :a7")
     Page<House> findByKinki(@Param("a1") String a1, @Param("a2") String a2, @Param("a3") String a3, @Param("a4") String a4, @Param("a5") String a5, @Param("a6") String a6, @Param("a7") String a7, Pageable pageable);
 
-    // 中国地方（5県：鳥取・島根・岡山・広島・山口）の検索
+    // 中国エリアの都道府県を一括検索する
     @Query("SELECT h FROM House h WHERE h.address LIKE :a1 OR h.address LIKE :a2 OR h.address LIKE :a3 OR h.address LIKE :a4 OR h.address LIKE :a5")
     Page<House> findByChugoku(@Param("a1") String a1, @Param("a2") String a2, @Param("a3") String a3, @Param("a4") String a4, @Param("a5") String a5, Pageable pageable);
 
-    // 四国地方（4県：徳島・香川・愛媛・高知）の検索
+    // 四国エリアの都道府県を一括検索する
     @Query("SELECT h FROM House h WHERE h.address LIKE :a1 OR h.address LIKE :a2 OR h.address LIKE :a3 OR h.address LIKE :a4")
     Page<House> findByShikoku(@Param("a1") String a1, @Param("a2") String a2, @Param("a3") String a3, @Param("a4") String a4, Pageable pageable);
 
-    // 九州・沖縄地方（8県：福岡・佐賀・長崎・熊本・大分・宮崎・鹿児島・沖縄）の検索
+    // 九州・沖縄エリアの都道府県を一括検索する
     @Query("SELECT h FROM House h WHERE h.address LIKE :a1 OR h.address LIKE :a2 OR h.address LIKE :a3 OR h.address LIKE :a4 OR h.address LIKE :a5 OR h.address LIKE :a6 OR h.address LIKE :a7 OR h.address LIKE :a8")
     Page<House> findByKyushuOkinawa(@Param("a1") String a1, @Param("a2") String a2, @Param("a3") String a3, @Param("a4") String a4, @Param("a5") String a5, @Param("a6") String a6, @Param("a7") String a7, @Param("a8") String a8, Pageable pageable);
 
-    // フリーキーワード ＆ エリア（住所）の組み合わせ検索
+    // キーワード検索とエリア絞り込みを同時に行う複合検索メソッド
     Page<House> findByNameLikeOrPostalCodeLikeOrAddressLikeOrPhoneNumberLikeAndAddressLike(
-        String n, String p, String a, String ph, String addressKeyword, Pageable pageable
+            String nameKeyword, // 民宿名キーワードを受け取る
+            String postalCodeKeyword, // 郵便番号キーワードを受け取る
+            String addressKeyword, // 住所キーワードを受け取る
+            String phoneNumberKeyword, // 電話番号キーワードを受け取る
+            String areaAddress, // エリアの絞り込みキーワードを受け取る
+            Pageable pageable // ページ設定を受け取る
     );
 }
